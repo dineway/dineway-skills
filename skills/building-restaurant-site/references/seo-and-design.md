@@ -71,6 +71,19 @@ Use enriched media density to drive layout choices. Many strong place/review/men
 - Rewrite source-grounded insights into polished restaurant-facing copy. The public page should sound like the restaurant's editorial voice, not an audit trail.
 - Validation must include searching rendered source/content for internal-rule phrases and replacing them before delivery.
 
+## Brand Voice and Copy Tone
+
+Before writing public Astro copy or CMS seed content, record a `Brand Voice & Copy Tone Brief` in `.plan/<restaurant-slug>/findings.md`. Base it on the restaurant category, reviews, `ugcPosts`, menu signals, service flags, location, and selected visual direction.
+
+Apply these tone rules:
+
+- Use first-person restaurant perspective when it sounds natural: "We serve", "Our kitchen", "Our team", and "Join us" are appropriate for owned promotional copy, CTAs, Menu introductions, About/Snapshot sections, Blog, and News. Use neutral third-person only for structured facts, attributed reviews, metadata, and legal/operational clarity.
+- Translate review praise into confident restaurant copy instead of audit-style summaries. For example, a review signal like "Guests love our 8-grain dessert" can become "Indulge in our award-winning 8-grain dessert" only when the award claim is actually supported; otherwise write a confident supported version such as "Indulge in our guest-loved 8-grain dessert."
+- Avoid hedging language in public copy. Do not write "appears to", "seems to", "may offer", "reviewers mention", or "based on reviews". Be definitive about offerings and experiences that are present in the source data; omit uncertain claims instead of qualifying them.
+- Maintain warmth without becoming overly casual. Prefer polished hospitality language over slang, jokes, excessive exclamation, or social-media chatter.
+- Keep descriptions concise and scannable. Favor short paragraphs, focused captions, crisp card copy, and specific menu/review highlights over long generic prose.
+- Use the same voice across Home, Menu, Reviews, Gallery, Blog, News, Contact, SEO descriptions, and CMS excerpts. Adjust density by context, not personality.
+
 ## Customer Visibility Gate
 
 Before generating any public Astro copy or CMS seed content, classify each planned content idea:

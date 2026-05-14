@@ -163,7 +163,7 @@ Key dependencies for a standalone Node.js site:
 	"dependencies": {
 		"@astrojs/node": "^9.0.0",
 		"@astrojs/react": "^4.0.0",
-		"astro": "^6.0.0",
+		"astro": "^6.3.0",
 		"dineway": "^0.1.17",
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0"

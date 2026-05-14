@@ -76,6 +76,7 @@ When creating or updating Astro pages or `seed/seed.json`:
 - Preserve exact factual fields such as name, address, phone, website, hours, rating, review count, coordinates, and Google Maps URL.
 - Do not invent menu items, awards, social accounts, reservation links, delivery options, opening hours, or accessibility features.
 - Use review, post, and video content carefully: summarize visible themes, keep quotes short, and omit claims that cannot be tied back to the saved JSON.
+- Apply the `Brand Voice & Copy Tone Brief` from `findings.md`: use first-person restaurant perspective where natural, transform review praise into confident restaurant-owned copy, avoid hedging, keep warmth polished rather than casual, and keep descriptions concise and scannable.
 - Before writing any public title, excerpt, body, caption, CTA, or metadata string, apply the customer visibility gate from `seo-and-design.md`. A line is allowed only when it is useful and appropriate for a real guest to read.
 - Use local downloaded assets in static Astro pages. Use uploaded Dineway media values in CMS-managed content fields.
 - Prefer fewer, better-supported pages over a large generic restaurant site.
