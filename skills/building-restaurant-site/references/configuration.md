@@ -161,10 +161,10 @@ Key dependencies for a standalone Node.js site:
 ```json
 {
 	"dependencies": {
-		"@astrojs/node": "^9.0.0",
-		"@astrojs/react": "^4.0.0",
+		"@astrojs/node": "^10.1.0",
+		"@astrojs/react": "^5.0.0",
 		"astro": "^6.3.0",
-		"dineway": "^0.1.18",
+		"dineway": "^0.1.20",
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0"
 	}
