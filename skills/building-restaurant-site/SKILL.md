@@ -66,12 +66,13 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
    - Hard gate: before writing public Astro content or CMS seed entries, `findings.md` must contain a `Customer Visibility Filter` section listing customer-safe themes, internal-only notes, and rejected phrasing patterns. If that section is missing, stop implementation and create it.
    - Record the chosen structure and rationale in `findings.md`.
 
-5. **Download local images before design**
+5. **Download local images and curate before design**
    - Read [references/media-pipeline.md](references/media-pipeline.md).
    - Extract image candidates from place, menu, review, post, video, and selected-place media fields according to [references/media-pipeline.md](references/media-pipeline.md).
-   - Download only usable image URLs to local files before designing. Never put a Google photo reference, API resource name, or remote photo URL directly in site markup or Dineway content.
-   - Use local image assets for the Astro-first design.
-   - Upload images to Dineway for the required CMS-managed Gallery and for Blog, News, Menu, or Reviews entries that use images.
+   - Download up to 20 candidates ranked by source priority and resolution signals. Never put a Google photo reference, API resource name, or remote photo URL directly in site markup or Dineway content.
+   - After downloading, inspect the actual downloaded images to evaluate visual quality, content diversity, and resolution. Select 8-10 of the best images using the `select` subcommand or by editing the manifest.
+   - Use selected local image assets for the Astro-first design.
+   - Upload only selected images to Dineway for the required CMS-managed Gallery and for Blog, News, Menu, or Reviews entries that use images.
    - If no representative images can be downloaded, record the blocker and ask for restaurant photos before final delivery because Gallery is required. If CMS upload fails, keep the static Astro design and omit the CMS-managed image field until upload works.
 
 6. **Design and build the Astro-first site**
@@ -123,15 +124,21 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
 # Summarize real place data and produce a planning input.
 node skills/building-restaurant-site/scripts/restaurant_site_data.js summarize places/PLACE_ID.json
 
-# Download usable image URLs from the enriched JSON.
+# Download usable image URLs from the enriched JSON (ranked by quality).
 node skills/building-restaurant-site/scripts/restaurant_site_data.js download places/PLACE_ID.json \
   --out assets/restaurant-name \
-  --max 6 \
+  --max 20 \
   --manifest .plan/restaurant/downloaded-media.json
 
-# Upload downloaded files for required CMS-managed Gallery and any CMS entry that uses images.
-node skills/building-restaurant-site/scripts/restaurant_site_data.js upload \
+# After inspecting downloaded images, select the best 8-10.
+node skills/building-restaurant-site/scripts/restaurant_site_data.js select \
   .plan/restaurant/downloaded-media.json \
+  --pick 1,3,5,6,8,10,12,15 \
+  --out .plan/restaurant/selected-media.json
+
+# Upload selected files for required CMS-managed Gallery and any CMS entry that uses images.
+node skills/building-restaurant-site/scripts/restaurant_site_data.js upload \
+  .plan/restaurant/selected-media.json \
   --url http://localhost:4321 \
   --out .plan/restaurant/uploaded-media.json
 ```

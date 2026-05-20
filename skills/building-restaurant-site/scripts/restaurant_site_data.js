@@ -12,6 +12,23 @@ const DATA_URL_RE = /^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i;
 const HTTP_URL_RE = /^https?:\/\//i;
 const IMAGE_MIME_RE = /^image\/[a-z0-9.+-]+$/i;
 const IMAGE_HOST_OR_PATH_RE = /googleusercontent|gstatic|cdn|images?|photos?/i;
+const URL_RESOLUTION_RE = /[=_](?:w|s|h)?(\d{2,5})(?:[-x](?:h|w)?(\d{2,5}))?(?:[&?#/]|$)/i;
+
+const SOURCE_PRIORITY = new Map([
+	["placeImageList", 100],
+	["photoList", 90],
+	["photos", 85],
+	["menuImages", 75],
+	["reviewImageList", 70],
+	["extImageReviews", 65],
+	["ugcPosts", 50],
+	["aiPhotoList", 40],
+	["reviewVideoList", 30],
+	["videoList", 30],
+	["placeVideoList", 30],
+	["extraVideos", 30],
+	["selectedPlace", 20],
+]);
 const EXTENSION_BY_MIME = new Map([
 	["image/jpeg", ".jpg"],
 	["image/png", ".png"],
@@ -50,8 +67,9 @@ const SKIP_URL_KEYS = new Set(["websiteUri", "googleMapsUri", "mapsUri", "busine
 function usage() {
 	return `Usage:
   node restaurant_site_data.js summarize places/PLACE_ID.json [--out summary.json]
-  node restaurant_site_data.js download places/PLACE_ID.json --out assets/restaurant --max 6 --manifest downloaded-media.json
-  node restaurant_site_data.js upload downloaded-media.json --url http://localhost:4321 --out uploaded-media.json`;
+  node restaurant_site_data.js download places/PLACE_ID.json --out assets/restaurant --max 20 --manifest downloaded-media.json
+  node restaurant_site_data.js upload downloaded-media.json --url http://localhost:4321 --out uploaded-media.json
+  node restaurant_site_data.js select downloaded-media.json --pick 1,3,5,6,8 --out selected-media.json`;
 }
 
 function parseArgs(argv) {
@@ -67,7 +85,8 @@ function parseArgs(argv) {
 		input,
 		out: "",
 		manifest: "",
-		max: 6,
+		max: 20,
+		pick: "",
 		url: "http://localhost:4321",
 		timeoutMs: 20000,
 	};
@@ -80,7 +99,8 @@ function parseArgs(argv) {
 			flag === "--manifest" ||
 			flag === "--url" ||
 			flag === "--max" ||
-			flag === "--timeout-ms"
+			flag === "--timeout-ms" ||
+			flag === "--pick"
 		) {
 			if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
 			if (flag === "--out") options.out = value;
@@ -88,6 +108,7 @@ function parseArgs(argv) {
 			if (flag === "--url") options.url = value;
 			if (flag === "--max") options.max = Number(value);
 			if (flag === "--timeout-ms") options.timeoutMs = Number(value);
+			if (flag === "--pick") options.pick = value;
 			index += 1;
 			continue;
 		}
@@ -100,10 +121,10 @@ function parseArgs(argv) {
 
 	if (options.help) return options;
 	if (!command || !input) throw new Error("Command and input path are required");
-	if (!["summarize", "download", "upload"].includes(command)) {
+	if (!["summarize", "download", "upload", "select"].includes(command)) {
 		throw new Error(`Unknown command: ${command}`);
 	}
-	if (!Number.isFinite(options.max) || options.max < 1) options.max = 6;
+	if (!Number.isFinite(options.max) || options.max < 1) options.max = 20;
 	if (!Number.isFinite(options.timeoutMs) || options.timeoutMs < 1000) options.timeoutMs = 20000;
 	return options;
 }
@@ -343,6 +364,42 @@ function classifyMediaUse(sourcePath) {
 		return "gallery";
 	}
 	return "design-only";
+}
+
+function sourcePriority(sourcePath) {
+	const lower = String(sourcePath).toLowerCase();
+	for (const [key, score] of SOURCE_PRIORITY) {
+		if (lower.includes(key.toLowerCase())) return score;
+	}
+	return 10;
+}
+
+function parseUrlResolution(url) {
+	const match = String(url || "").match(URL_RESOLUTION_RE);
+	if (!match) return 0;
+	const a = Number(match[1]) || 0;
+	const b = Number(match[2]) || 0;
+	return Math.max(a, b);
+}
+
+function rankCandidates(candidates) {
+	return candidates
+		.map((candidate, originalIndex) => ({
+			...candidate,
+			_priority: sourcePriority(candidate.sourcePath),
+			_urlResolution: parseUrlResolution(candidate.url),
+			_originalIndex: originalIndex,
+		}))
+		.sort((a, b) => {
+			if (a._priority !== b._priority) return b._priority - a._priority;
+			if (a._urlResolution !== b._urlResolution) return b._urlResolution - a._urlResolution;
+			return a._originalIndex - b._originalIndex;
+		})
+		.map(({ _priority, _urlResolution, _originalIndex, ...rest }) => ({
+			...rest,
+			priority: _priority,
+			urlResolutionHint: _urlResolution,
+		}));
 }
 
 function extractImageCandidates(payload) {
@@ -585,6 +642,90 @@ async function downloadHttpUrl(candidate, targetPath, timeoutMs) {
 	return { mimeType, size: buffer.length };
 }
 
+async function readImageDimensions(filePath) {
+	try {
+		const fd = await fs.open(filePath, "r");
+		try {
+			const header = Buffer.alloc(4096);
+			const { bytesRead } = await fd.read(header, 0, 4096, 0);
+			if (bytesRead < 8) return null;
+
+			// PNG: 8-byte signature then IHDR chunk with width/height at offset 16/20
+			if (
+				header[0] === 0x89 &&
+				header[1] === 0x50 &&
+				header[2] === 0x4e &&
+				header[3] === 0x47
+			) {
+				if (bytesRead >= 24) {
+					return {
+						width: header.readUInt32BE(16),
+						height: header.readUInt32BE(20),
+					};
+				}
+				return null;
+			}
+
+			// JPEG: scan for SOF0/SOF2 markers (0xFF 0xC0 or 0xFF 0xC2)
+			if (header[0] === 0xff && header[1] === 0xd8) {
+				let offset = 2;
+				while (offset + 8 < bytesRead) {
+					if (header[offset] !== 0xff) break;
+					const marker = header[offset + 1];
+					if (marker === 0xc0 || marker === 0xc2) {
+						if (offset + 9 < bytesRead) {
+							return {
+								width: header.readUInt16BE(offset + 7),
+								height: header.readUInt16BE(offset + 5),
+							};
+						}
+						return null;
+					}
+					const segLen = header.readUInt16BE(offset + 2);
+					offset += 2 + segLen;
+				}
+				return null;
+			}
+
+			// WebP: RIFF....WEBP then VP8/VP8L/VP8X
+			if (
+				header[0] === 0x52 &&
+				header[1] === 0x49 &&
+				header[2] === 0x46 &&
+				header[3] === 0x46 &&
+				bytesRead >= 30
+			) {
+				const chunk = header.toString("ascii", 12, 16);
+				if (chunk === "VP8 " && bytesRead >= 30) {
+					return {
+						width: header.readUInt16LE(26) & 0x3fff,
+						height: header.readUInt16LE(28) & 0x3fff,
+					};
+				}
+				if (chunk === "VP8L" && bytesRead >= 25) {
+					const bits = header.readUInt32LE(21);
+					return {
+						width: (bits & 0x3fff) + 1,
+						height: ((bits >> 14) & 0x3fff) + 1,
+					};
+				}
+				if (chunk === "VP8X" && bytesRead >= 30) {
+					return {
+						width: (header.readUIntLE(24, 3) & 0xffffff) + 1,
+						height: (header.readUIntLE(27, 3) & 0xffffff) + 1,
+					};
+				}
+			}
+
+			return null;
+		} finally {
+			await fd.close();
+		}
+	} catch {
+		return null;
+	}
+}
+
 async function runDownload(inputPath, options) {
 	const payload = await readJson(inputPath);
 	const summary = summarize(payload, inputPath);
@@ -594,9 +735,10 @@ async function runDownload(inputPath, options) {
 
 	const downloaded = [];
 	const skipped = [];
-	const usableCandidates = restaurant.imageCandidates
-		.filter((candidate) => candidate.url)
-		.slice(0, options.max);
+	const rankedCandidates = rankCandidates(
+		restaurant.imageCandidates.filter((candidate) => candidate.url),
+	);
+	const usableCandidates = rankedCandidates.slice(0, options.max);
 	for (let index = 0; index < usableCandidates.length; index += 1) {
 		const candidate = usableCandidates[index];
 		const ordinal = String(index + 1).padStart(2, "0");
@@ -618,13 +760,19 @@ async function runDownload(inputPath, options) {
 				await fs.rename(targetPath, correctedPath);
 				targetPath = correctedPath;
 			}
+			const dimensions = await readImageDimensions(targetPath);
 			downloaded.push({
+				index: index + 1,
 				path: targetPath,
 				sourceUrl: candidate.url,
 				sourcePath: candidate.sourcePath,
 				intendedUse: candidate.intendedUse,
+				priority: candidate.priority,
+				urlResolutionHint: candidate.urlResolutionHint,
 				mimeType: result.mimeType,
 				size: result.size,
+				width: dimensions?.width ?? null,
+				height: dimensions?.height ?? null,
 				alt: `${restaurant.name || "Restaurant"} photo ${index + 1}`,
 				caption: `${restaurant.name || "Restaurant"} ${candidate.intendedUse || "restaurant"} photo`,
 			});
@@ -677,13 +825,41 @@ function mediaValueFromItem(item, fallback) {
 	};
 }
 
+async function runSelect(inputPath, options) {
+	const manifest = await readJson(inputPath);
+	const downloaded = Array.isArray(manifest.downloaded) ? manifest.downloaded : [];
+	if (!options.pick) throw new Error("--pick is required (comma-separated 1-based indices, e.g. --pick 1,3,5,8)");
+	const pickIndices = new Set(
+		String(options.pick)
+			.split(",")
+			.map((s) => Number(s.trim()))
+			.filter((n) => Number.isFinite(n) && n >= 1),
+	);
+	if (pickIndices.size === 0) throw new Error("--pick must contain at least one valid index");
+	const selected = downloaded.map((item) => ({
+		...item,
+		selected: pickIndices.has(item.index),
+	}));
+	const output = {
+		...manifest,
+		downloaded: selected,
+		selectedCount: selected.filter((item) => item.selected).length,
+		totalCount: selected.length,
+	};
+	const outPath = options.out || inputPath;
+	await writeJson(outPath, output);
+	return { ...output, outputPath: outPath };
+}
+
 async function runUpload(inputPath, options) {
 	const manifest = await readJson(inputPath);
 	const downloaded = Array.isArray(manifest.downloaded) ? manifest.downloaded : [];
+	const hasSelections = downloaded.some((item) => item.selected === true);
+	const itemsToUpload = hasSelections ? downloaded.filter((item) => item.selected === true) : downloaded;
 	const uploaded = [];
 	const failed = [];
 
-	for (const item of downloaded) {
+	for (const item of itemsToUpload) {
 		const args = ["dineway", "media", "upload", item.path, "--url", options.url, "--json"];
 		if (item.alt) args.push("--alt", item.alt);
 		if (item.caption) args.push("--caption", item.caption);
@@ -736,6 +912,8 @@ async function main() {
 		if (options.out) await writeJson(options.out, output);
 	} else if (options.command === "download") {
 		output = await runDownload(options.input, options);
+	} else if (options.command === "select") {
+		output = await runSelect(options.input, options);
 	} else if (options.command === "upload") {
 		output = await runUpload(options.input, options);
 	}

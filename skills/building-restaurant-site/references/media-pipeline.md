@@ -26,19 +26,49 @@ Restaurant images must be downloaded to local files before design. Gallery is re
 
 Do not treat all media equally. Menu images should primarily support Menu/Gallery, review images should support Reviews/Gallery/Blog, post media should support Blog/News/Gallery, and place images should drive hero/atmosphere/gallery decisions.
 
-## Download
+## Two-Phase Workflow
+
+### Phase 1: Download with Quality Ranking
+
+Download up to 20 image candidates, ranked by source priority and resolution signals. The script sorts candidates by:
+
+1. **Source priority** — `placeImageList` (100) > `photoList` (90) > `photos` (85) > `menuImages` (75) > `reviewImageList` (70) > `extImageReviews` (65) > `ugcPosts` (50) > `aiPhotoList` (40) > video thumbnails (30) > selected-place fallbacks (20)
+2. **URL resolution hints** — parsed from Google image URL size parameters (e.g. `=w1200-h800`, `=s1600`)
+3. **Original order** — stable tiebreaker
+
+After download, the script reads actual image dimensions (JPEG/PNG/WebP header parsing) and records them in the manifest alongside file size, priority score, and source path.
 
 ```bash
 node skills/building-restaurant-site/scripts/restaurant_site_data.js download \
   places/PLACE_ID.json \
   --out assets/restaurant-slug \
-  --max 6 \
+  --max 20 \
   --manifest .plan/building-restaurant-site/restaurant/downloaded-media.json
 ```
 
-The manifest records downloaded files and skipped candidates.
+The manifest records downloaded files with their dimensions, priority, and resolution hints, plus skipped candidates.
 
-## Upload for CMS-Managed Content
+### Phase 2: Agent Curation
+
+After downloading, the agent inspects the actual image content by viewing the downloaded files. Select 8-10 images based on:
+
+- **Visual quality** — sharp, well-lit, properly composed
+- **Content diversity** — cover food, interior, exterior, atmosphere, service
+- **Resolution** — prefer higher resolution images (check `width`, `height`, `size` in manifest)
+- **Intended use** — ensure coverage for hero, gallery, menu, review, and blog needs
+
+Mark selected images using the `select` subcommand:
+
+```bash
+node skills/building-restaurant-site/scripts/restaurant_site_data.js select \
+  .plan/building-restaurant-site/restaurant/downloaded-media.json \
+  --pick 1,3,5,6,8,10,12,15 \
+  --out .plan/building-restaurant-site/restaurant/selected-media.json
+```
+
+The `--pick` flag accepts comma-separated 1-based indices matching the `index` field in the manifest. The output manifest marks each item with `selected: true/false`.
+
+### Phase 3: Upload for CMS-Managed Content
 
 Start the local Dineway dev server first if needed:
 
@@ -46,16 +76,18 @@ Start the local Dineway dev server first if needed:
 bgproc start -n devserver -w -- pnpm dev
 ```
 
-Then upload:
+Then upload. When the manifest contains `selected` flags, only selected items are uploaded:
 
 ```bash
 node skills/building-restaurant-site/scripts/restaurant_site_data.js upload \
-  .plan/building-restaurant-site/restaurant/downloaded-media.json \
+  .plan/building-restaurant-site/restaurant/selected-media.json \
   --url http://localhost:4321 \
   --out .plan/building-restaurant-site/restaurant/uploaded-media.json
 ```
 
-Upload downloaded images selected for Gallery and any downloaded image used by Dineway-managed content. The upload output includes `mediaValue` objects suitable for Dineway content:
+If no items have the `selected` flag (backwards compatible), all items are uploaded.
+
+The upload output includes `mediaValue` objects suitable for Dineway content:
 
 ```json
 {
