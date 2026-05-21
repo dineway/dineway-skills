@@ -8,6 +8,9 @@ const DEFAULT_LANGUAGE = "en";
 const DEFAULT_TIMEOUT_MS = 20000;
 const DEFAULT_BOOTSTRAP_PLACE_ID = "ChIJs5ydyTiuEmsR0fRSlU0C7k0";
 const DEFAULT_OUTPUT_DIR = "places";
+const DINEWAY_CONFIG_DIR = path.join(process.cwd(), ".dineway");
+const FORGEWAY_SECRET_PATH = path.join(DINEWAY_CONFIG_DIR, "forgeway.json");
+const DINEWAY_CONFIG_GITIGNORE = "*\n!.gitignore\n";
 const FOOD_TYPES = new Set(["restaurant", "cafe", "food", "meal_takeaway", "meal_delivery", "bakery"]);
 const VALUE_FLAGS = new Map([
 	["--name", "name"],
@@ -178,6 +181,59 @@ function writePlaceJson(payload, placeId, outputDir) {
 		outputPath,
 		displayPath: relativeDisplayPath(outputPath),
 	};
+}
+
+function shadowGrantKey(baseUrl, placeId) {
+	return `${String(baseUrl || DEFAULT_BASE_URL).replace(TRAILING_SLASHES_RE, "")}#${placeId}`;
+}
+
+function readForgewaySecretStore() {
+	try {
+		return JSON.parse(fs.readFileSync(FORGEWAY_SECRET_PATH, "utf8"));
+	} catch {
+		return {};
+	}
+}
+
+function writeForgewayShadowGrant(auth, options) {
+	if (!auth?.accessToken || !auth?.refreshToken || !auth?.placeId) return false;
+	const store = readForgewaySecretStore();
+	const platformApiUrl = String(options.baseUrl || DEFAULT_BASE_URL).replace(TRAILING_SLASHES_RE, "");
+	const key = shadowGrantKey(platformApiUrl, auth.placeId);
+	const grant = {
+		platformApiUrl,
+		placeId: auth.placeId,
+		accessToken: auth.accessToken,
+		refreshToken: auth.refreshToken,
+		restaurantName: options.name,
+		city: options.city,
+		user: auth.user
+			? {
+					id: auth.user.id,
+					name: auth.user.profile?.name || auth.user.name || auth.user.email,
+					email: auth.user.email,
+					avatarUrl: auth.user.profile?.avatar_url || auth.user.avatarUrl || auth.user.avatar_url || null,
+					emailVerified: auth.user.emailVerified ?? auth.user.email_verified ?? true,
+				}
+			: undefined,
+		updatedAt: new Date().toISOString(),
+	};
+	fs.mkdirSync(DINEWAY_CONFIG_DIR, { recursive: true, mode: 0o700 });
+	const gitignorePath = path.join(DINEWAY_CONFIG_DIR, ".gitignore");
+	if (!fs.existsSync(gitignorePath)) {
+		fs.writeFileSync(gitignorePath, DINEWAY_CONFIG_GITIGNORE, "utf8");
+	}
+	store.shadowGrants = {
+		...store.shadowGrants,
+		[key]: grant,
+	};
+	store.lastShadowGrantKey = key;
+	fs.writeFileSync(FORGEWAY_SECRET_PATH, `${JSON.stringify(store, null, "\t")}\n`, {
+		encoding: "utf8",
+		mode: 0o600,
+	});
+	fs.chmodSync(FORGEWAY_SECRET_PATH, 0o600);
+	return true;
 }
 
 function buildSavedOutputSummary(payload, savedFile, savedPayloadType) {
@@ -648,6 +704,12 @@ async function enrichPlaceDetails(options) {
 		},
 		selectedPlace,
 		placeDetails: detailResponse,
+		shadowAuth: {
+			placeId: finalPlaceId,
+			accessToken: finalAuth.accessToken,
+			refreshToken: finalAuth.refreshToken,
+			user: finalAuth.user,
+		},
 	};
 
 	if (options.includeCandidates) {
@@ -680,10 +742,13 @@ async function main() {
 
 	try {
 		const payload = await enrichPlaceDetails(options);
-		const savedPayload = options.detailsOnly ? payload.placeDetails : payload;
-		const placeId = payload.selectedPlace?.placeId ?? payload.authFlow?.finalPlaceId;
+		const savedAuth = writeForgewayShadowGrant(payload.shadowAuth, options);
+		const { shadowAuth: _shadowAuth, ...publicPayload } = payload;
+		const savedPayload = options.detailsOnly ? publicPayload.placeDetails : publicPayload;
+		const placeId = publicPayload.selectedPlace?.placeId ?? publicPayload.authFlow?.finalPlaceId;
 		const savedFile = writePlaceJson(savedPayload, placeId, options.outputDir);
-		const output = buildSavedOutputSummary(payload, savedFile, options.detailsOnly ? "placeDetails" : "fullPayload");
+		const output = buildSavedOutputSummary(publicPayload, savedFile, options.detailsOnly ? "placeDetails" : "fullPayload");
+		output.savedShadowGrant = savedAuth;
 		console.log(JSON.stringify(output, null, options.compact ? 0 : 2));
 		return 0;
 	} catch (error) {
