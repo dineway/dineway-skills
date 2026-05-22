@@ -72,10 +72,10 @@ When creating or updating content, each field is checked:
 
 ```bash
 # Markdown string — converted to PT automatically
-npx dineway content create posts --data '{"title": "Hello", "body": "# Welcome\n\nThis is **bold**."}'
+npx dineway content create posts --data '{"title": "Hello", "content": "# Welcome\n\nThis is **bold**."}'
 
 # Raw PT array — passed through as-is
-npx dineway content create posts --data '{"title": "Hello", "body": [{"_type": "block", "children": [{"_type": "span", "text": "Welcome"}]}]}'
+npx dineway content create posts --data '{"title": "Hello", "content": [{"_type": "block", "children": [{"_type": "span", "text": "Welcome"}]}]}'
 ```
 
 ## Auto-Publishing

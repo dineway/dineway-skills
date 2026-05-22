@@ -390,7 +390,7 @@ function rankCandidates(candidates) {
 			_urlResolution: parseUrlResolution(candidate.url),
 			_originalIndex: originalIndex,
 		}))
-		.sort((a, b) => {
+		.toSorted((a, b) => {
 			if (a._priority !== b._priority) return b._priority - a._priority;
 			if (a._urlResolution !== b._urlResolution) return b._urlResolution - a._urlResolution;
 			return a._originalIndex - b._originalIndex;

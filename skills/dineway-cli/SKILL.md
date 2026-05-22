@@ -185,7 +185,7 @@ npx dineway content get posts 01ABC123 --raw        # skip PT->markdown conversi
 npx dineway content get posts 01ABC123 --published   # ignore pending drafts
 
 # Create content (auto-publishes by default)
-npx dineway content create posts --data '{"title": "Hello", "body": "# World"}'
+npx dineway content create posts --data '{"title": "Hello", "content": "# World"}'
 npx dineway content create posts --file post.json --slug hello-world
 npx dineway content create posts --draft --data '...'  # keep as draft
 cat post.json | npx dineway content create posts --stdin
