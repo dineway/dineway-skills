@@ -73,6 +73,23 @@ DINEWAY_SITE_URL=https://mysite.example.com
 
 With TLS terminated in front, **`astro dev --host 127.0.0.1`** (loopback) is usually enough: the proxy reaches the dev server locally while **`siteUrl`** matches the browser’s HTTPS origin -- without opening the Node port on the LAN.
 
+### Forgeway deploy and admin bootstrap
+
+When deploying a Dineway restaurant project to Forgeway:
+
+```bash
+npx dineway deploy forgeway
+```
+
+- Use the prompt label and language **Dineway account email**.
+- A project can start from a shadow user, but Forgeway does not allow shadow users to deploy. The CLI upgrades the shadow grant through email verification and deploys with the verified formal Dineway account credentials.
+- The Dineway account email becomes the initial deployed-site admin email.
+- After a successful deploy, the CLI writes `DINEWAY_SITE_URL` and `DINEWAY_TOKEN` to project `.env`, adds `.env` to `.gitignore`, and avoids printing the raw admin API token.
+- Follow-up remote CLI commands should work from the project directory, for example `npx dineway whoami` and `npx dineway content list posts`.
+- First browser admin access should use the printed setup link, then register a passkey. Normal passkey login requires at least one registered passkey.
+- Magic link login requires a site email provider. Forgeway admin bootstrap does not require one.
+- If the setup link expires or is exposed, regenerate it with `npx dineway auth setup-link` from the project directory.
+
 ### Plugins
 
 Register plugins in `astro.config.mjs`:

@@ -9,20 +9,22 @@ The Dineway CLI (`dineway`) manages Dineway Agentic Web builder projects and ins
 
 - **Local commands** — work directly on local project files or a SQLite file, no running server needed: `init`, `dev`, `seed`, `export-seed`, `auth secret`
 - **Deployment commands** — orchestrate platform CLIs or generate provider files: `deploy`
-- **Remote commands** — talk to a running Dineway instance via HTTP: `types`, `login`, `logout`, `whoami`, `content`, `schema`, `media`, `search`, `taxonomy`, `menu`
+- **Remote commands** — talk to a running Dineway instance via HTTP: `types`, `login`, `logout`, `whoami`, `auth setup-link`, `content`, `schema`, `media`, `search`, `taxonomy`, `menu`
 
 ## Authentication
 
 Remote commands resolve auth automatically:
 
 1. `--token` flag
-2. `DINEWAY_TOKEN` env var
+2. `DINEWAY_TOKEN` from the shell environment or project `.env`
 3. Stored credentials from `dineway login`
 4. Dev bypass (localhost only — no token needed)
 
-For local dev servers, just run the command — auth is handled automatically. For remote instances, run `dineway login --url https://my-site.example.com` first.
+When `--url` is omitted, remote commands check `DINEWAY_URL` and `DINEWAY_SITE_URL` from the shell environment and project `.env` before falling back to localhost.
 
-`dineway deploy` does not use Dineway instance authentication. It uses provider CLIs such as Railway CLI, flyctl, or gcloud.
+For local dev servers, just run the command — auth is handled automatically. For remote instances, run `dineway login --url https://my-site.example.com` first, or rely on the `.env` written by Forgeway deploy.
+
+`dineway deploy` does not use Dineway instance authentication. Forgeway deploy uses a project shadow deploy grant only to upgrade to a verified Dineway account by email; Other deploy targets use provider CLIs such as Railway CLI, flyctl, or gcloud.
 
 ## Custom Headers & Reverse Proxies
 
@@ -107,6 +109,9 @@ npx dineway whoami
 # Logout
 npx dineway logout
 
+# Create a one-time browser setup link for the current admin
+npx dineway auth setup-link
+
 # Generate auth secret for deployment
 npx dineway auth secret
 ```
@@ -127,6 +132,7 @@ Use it to generate provider files and delegate deployment to platform CLIs:
 npx dineway deploy
 
 # Stable targets
+npx dineway deploy forgeway
 npx dineway deploy railway
 npx dineway deploy docker
 npx dineway deploy fly
@@ -143,12 +149,13 @@ npx dineway deploy fly --dry-run
 
 Target behavior:
 
-| Target    | Support      | Behavior                                                                                       |
-| --------- | ------------ | ---------------------------------------------------------------------------------------------- |
-| `railway` | Stable       | Generates `railway.json` and runs `railway up`.                                                |
-| `docker`  | Stable       | Generates `Dockerfile`, `.dockerignore`, and optional `docker-compose.yml`; never runs Docker. |
-| `fly`     | Stable       | Generates Docker-backed Fly config and runs `fly deploy --remote-only`.                        |
-| `gcp`     | Experimental | Runs `gcloud run deploy --source .`; requires remote database defaults.                        |
+| Target     | Support      | Behavior                                                                                       |
+| ---------- | ------------ | ---------------------------------------------------------------------------------------------- |
+| `forgeway` | Stable       | Deploys through Dineway's first-party Forgeway platform and bootstraps admin access.           |
+| `railway`  | Stable       | Generates `railway.json` and runs `railway up`.                                                |
+| `docker`   | Stable       | Generates `Dockerfile`, `.dockerignore`, and optional `docker-compose.yml`; never runs Docker. |
+| `fly`      | Stable       | Generates Docker-backed Fly config and runs `fly deploy --remote-only`.                        |
+| `gcp`      | Experimental | Runs `gcloud run deploy --source .`; requires remote database defaults.                        |
 
 Provider CLI rules:
 
@@ -165,6 +172,10 @@ Persistence and secrets:
 - The selected target is stored in `package.json` under `dineway.deploy.target` after a successful deploy or generation.
 - Generated provider files are not overwritten when they already exist.
 - Generated provider files must not contain secrets.
+- Forgeway deploy writes `DINEWAY_SITE_URL` and `DINEWAY_TOKEN` to project `.env`, adds `.env` to `.gitignore`, prints a one-time setup link, and does not print the raw admin API token.
+- Forgeway uses the Dineway account email as the initial deployed-site admin email. Shadow users cannot deploy; the CLI upgrades the shadow grant through email verification before deploy.
+- First Forgeway browser login should use the setup link, then register a passkey. Magic link login requires a site email provider and is not part of admin bootstrap.
+- Regenerate a lost or expired Forgeway setup link with `npx dineway auth setup-link` from the project directory.
 - Configure `DINEWAY_AUTH_SECRET`, `DINEWAY_PREVIEW_SECRET`, database auth tokens, and media storage credentials in the provider's secret system.
 - File-backed libSQL and local uploads require durable disk; use remote libSQL/PostgreSQL and S3-compatible storage on ephemeral or multi-instance hosts.
 - Cloud Run is experimental and should use remote database and object storage by default.
