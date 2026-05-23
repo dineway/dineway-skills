@@ -88,12 +88,46 @@ The agent starts a local development server. You can check the site locally at `
   > While developing, you can bypass the passkey setup by navigating to:
   > `http://localhost:4321/_dineway/api/setup/dev-bypass?redirect=/_dineway/admin`
 
-### 6. Going Live (Publishing)
-When you approve the local version, the agent runs a single command to publish it to **Forgeway** (Dineway's optimized hosting platform):
+### 6. Going Live & Own Your Website
+Unlike other website builders, Dineway lets you fully own your website. You own all of your code, your content database, and your media files. You can choose to deploy to Dineway's official platform or host it on your own cloud provider with absolutely no vendor lock-in.
+
+#### Option A: Deploy to Forgeway (Simplest & Fast)
+Forgeway is Dineway's first-party hosting platform. It's fully optimized for agentic sites:
 ```bash
 npx dineway deploy forgeway
 ```
-This builds your website, hosts it on a fast CDN, and generates a **one-time setup link** for the live Admin dashboard. 
+* builds the site, hosts it on a high-speed global CDN, and sets up your database automatically.
+* It prints a **one-time setup link** for you to register your admin passkey on the live site.
+
+#### Option B: Self-Host Anywhere (Maximum Data Control)
+You can deploy Dineway to any standard cloud host or your own server. Your SQLite database can run on persistent storage, or you can connect it to remote databases like **PostgreSQL** or **libSQL**.
+
+- **Railway (Recommended for Cloud)**:
+  ```bash
+  npx dineway deploy railway
+  ```
+  Generates a production `railway.json` config and triggers `railway up` to launch.
+  
+- **Fly.io (Great for Global VPS)**:
+  ```bash
+  npx dineway deploy fly
+  ```
+  Generates configurations and deploys via lightweight Docker containers with persistent disk volumes.
+
+- **Self-Hosted VPS (Docker & Docker Compose)**:
+  ```bash
+  npx dineway deploy docker --compose
+  ```
+  Generates a production-ready `Dockerfile`, `.dockerignore`, and `docker-compose.yml` setup so you can run it on your own virtual private server (VPS).
+
+- **Google Cloud Run (GCP)**:
+  ```bash
+  npx dineway deploy gcp
+  ```
+  Launches serverless containers using a remote database.
+
+> [!NOTE]
+> When self-hosting on ephemeral or serverless platforms (like Railway, Fly, or Cloud Run), we recommend using remote databases (like libSQL/Turso or PostgreSQL) and S3-compatible object storage (AWS S3, Cloudflare R2, or MinIO) for media uploads so your data is permanently preserved outside the web container. 
 
 ---
 
