@@ -54,7 +54,7 @@ graph TD
     C --> D[3. Design Visual Astro Pages]
     D --> E[4. Seed CMS & Upload Curated Media]
     E --> F[5. Start Dev Server & Verify Local Admin]
-    F --> G[6. Deploy Live to Forgeway]
+    F --> G[6. Deploy Live to Dineway]
     G --> H[Finished! Get Live Setup Link]
 ```
 
@@ -91,10 +91,10 @@ The agent starts a local development server. You can check the site locally at `
 ### 6. Going Live & Own Your Website
 Unlike other website builders, Dineway lets you fully own your website. You own all of your code, your content database, and your media files. You can choose to deploy to Dineway's official platform or host it on your own cloud provider with absolutely no vendor lock-in.
 
-#### Option A: Deploy to Forgeway (Simplest & Fast)
-Forgeway is Dineway's first-party hosting platform. It's fully optimized for agentic sites:
+#### Option A: Deploy to Dineway (Simplest & Fast)
+Dineway provides a first-party hosting platform for your website. It's fully optimized for agentic sites:
 ```bash
-npx dineway deploy forgeway
+npx dineway deploy
 ```
 * builds the site, hosts it on a high-speed global CDN, and sets up your database automatically.
 * It prints a **one-time setup link** for you to register your admin passkey on the live site.
@@ -177,10 +177,10 @@ You can deploy Dineway to any standard cloud host or your own server. Your SQLit
 7. **Verify local site:**
    Use background processes to start the dev server (`npx dineway dev`). Ensure the site builds without type or lint errors.
 
-8. **Deploy to Forgeway:**
+8. **Deploy to Dineway:**
    Run the deployment pipeline:
    ```bash
-   npx dineway deploy forgeway
+   npx dineway deploy
    ```
    Parse the output, extract the one-time admin setup link, and output it clearly to the user.
 
