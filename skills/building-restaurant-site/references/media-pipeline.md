@@ -16,7 +16,7 @@ Restaurant images must be downloaded to local files before design. Gallery is re
    - video thumbnails or downloadable stills from `placeDetails.reviewVideoList`, `placeDetails.videoList`, `placeDetails.placeVideoList`, `placeDetails.extraVideos`, and `placeDetails.ugcPosts`
    - selected-place image fallbacks
 2. Download actual image bytes to local files before Astro design implementation.
-3. Use local asset paths for static Astro promotional pages and sections.
+3. Put static Astro images under `public/assets/<restaurant-slug>/` and reference them in markup as `/assets/<restaurant-slug>/<file>`. Do not put browser-referenced static images in a root `assets/` directory.
 4. Upload selected local files into the running Dineway site with `dineway media upload` for Gallery and any other CMS-managed image fields.
 5. Use the uploaded media values in Dineway image fields.
 6. Do not use remote image URLs, Google photo references, photo resource names, or API tokens in markup.
@@ -41,7 +41,7 @@ After download, the script reads actual image dimensions (JPEG/PNG/WebP header p
 ```bash
 node skills/building-restaurant-site/scripts/restaurant_site_data.js download \
   places/PLACE_ID.json \
-  --out assets/restaurant-slug \
+  --out public/assets/restaurant-slug \
   --max 20 \
   --manifest .plan/building-restaurant-site/restaurant/downloaded-media.json
 ```
@@ -104,7 +104,7 @@ The upload output includes `mediaValue` objects suitable for Dineway content:
 }
 ```
 
-Use those objects in image fields and JSON gallery blocks. Render Dineway-managed images with `Image` from `dineway/ui`. Static Astro promotional pages may keep using local asset paths.
+Use those objects in image fields and JSON gallery blocks. Render Dineway-managed images with `Image` from `dineway/ui`. Static Astro promotional pages may keep using `/assets/...` paths backed by files in `public/assets/...`.
 
 ## Fallbacks
 

@@ -126,7 +126,7 @@ node skills/building-restaurant-site/scripts/restaurant_site_data.js summarize p
 
 # Download usable image URLs from the enriched JSON (ranked by quality).
 node skills/building-restaurant-site/scripts/restaurant_site_data.js download places/PLACE_ID.json \
-  --out assets/restaurant-name \
+  --out public/assets/restaurant-name \
   --max 20 \
   --manifest .plan/restaurant/downloaded-media.json
 

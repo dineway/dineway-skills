@@ -8,6 +8,7 @@ const IMAGE_EXTENSION_RE = /\.(avif|gif|jpe?g|png|webp)(?:$|[?#])/i;
 const DIACRITICS_RE = /[\u0300-\u036f]/g;
 const SLUG_SEPARATOR_RE = /[^a-z0-9]+/g;
 const SLUG_TRIM_RE = /^-|-$/g;
+const LEADING_DOT_SLASH_RE = /^\.\//;
 const DATA_URL_RE = /^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i;
 const HTTP_URL_RE = /^https?:\/\//i;
 const IMAGE_MIME_RE = /^image\/[a-z0-9.+-]+$/i;
@@ -67,7 +68,7 @@ const SKIP_URL_KEYS = new Set(["websiteUri", "googleMapsUri", "mapsUri", "busine
 function usage() {
 	return `Usage:
   node restaurant_site_data.js summarize places/PLACE_ID.json [--out summary.json]
-  node restaurant_site_data.js download places/PLACE_ID.json --out assets/restaurant --max 20 --manifest downloaded-media.json
+  node restaurant_site_data.js download places/PLACE_ID.json --out public/assets/restaurant --max 20 --manifest downloaded-media.json
   node restaurant_site_data.js upload downloaded-media.json --url http://localhost:4321 --out uploaded-media.json
   node restaurant_site_data.js select downloaded-media.json --pick 1,3,5,6,8 --out selected-media.json`;
 }
@@ -177,6 +178,16 @@ function slugify(value) {
 			.replace(SLUG_SEPARATOR_RE, "-")
 			.replace(SLUG_TRIM_RE, "") || "restaurant"
 	);
+}
+
+function validateDownloadTargetDir(targetDir) {
+	const normalized = targetDir.split(path.sep).join("/").replace(LEADING_DOT_SLASH_RE, "");
+	if (normalized === "assets" || normalized.startsWith("assets/")) {
+		throw new Error(
+			"Static Astro image output must be under public/assets. Use --out public/assets/restaurant-slug so /assets/... URLs are served.",
+		);
+	}
+	return targetDir;
 }
 
 function getPayloadParts(payload) {
@@ -730,7 +741,9 @@ async function runDownload(inputPath, options) {
 	const payload = await readJson(inputPath);
 	const summary = summarize(payload, inputPath);
 	const restaurant = summary.restaurant;
-	const targetDir = options.out || path.join("assets", restaurant.slug);
+	const targetDir = validateDownloadTargetDir(
+		options.out || path.join("public", "assets", restaurant.slug),
+	);
 	await fs.mkdir(targetDir, { recursive: true });
 
 	const downloaded = [];
