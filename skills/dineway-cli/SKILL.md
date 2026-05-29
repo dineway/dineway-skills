@@ -128,10 +128,10 @@ node ./dist/server/entry.mjs
 Use it to generate provider files and delegate deployment to platform CLIs:
 
 ```bash
-# First deploy: choose a target interactively
+# Default first-party deploy target: Forgeway
 npx dineway deploy
 
-# Stable targets
+# Explicit stable targets
 npx dineway deploy forgeway
 npx dineway deploy railway
 npx dineway deploy docker
@@ -145,6 +145,10 @@ npx dineway deploy docker --compose
 
 # Plan without writing files or deploying
 npx dineway deploy fly --dry-run
+
+# Forgeway deploy for agents that cannot answer interactive OTP prompts
+npx dineway deploy --restaurant-name "Towzen Sydney" --city "Sydney" --email owner@example.com --send-otp
+npx dineway deploy --restaurant-name "Towzen Sydney" --city "Sydney" --email owner@example.com --otp 123456
 ```
 
 Target behavior:
@@ -169,11 +173,12 @@ Provider CLI rules:
 
 Persistence and secrets:
 
-- The selected target is stored in `package.json` under `dineway.deploy.target` after a successful deploy or generation.
+- The selected target is stored in `package.json` under `.dineway/deploy.json` after a successful deploy or generation.
 - Generated provider files are not overwritten when they already exist.
 - Generated provider files must not contain secrets.
 - Forgeway deploy writes `DINEWAY_SITE_URL` and `DINEWAY_TOKEN` to project `.env`, adds `.env` to `.gitignore`, prints a one-time setup link, and does not print the raw admin API token.
 - Forgeway uses the Dineway account email as the initial deployed-site admin email. Shadow users cannot deploy; the CLI upgrades the shadow grant through email verification before deploy.
+- For non-interactive agents, run Forgeway deploy first with `--email <email> --send-otp` to send the verification code and exit, then rerun with the same restaurant/site options and `--email <email> --otp <code>` to verify the existing code and deploy. `--otp` does not send a new code.
 - First Forgeway browser login should use the setup link, then register a passkey. Magic link login requires a site email provider and is not part of admin bootstrap.
 - Regenerate a lost or expired Forgeway setup link with `npx dineway auth setup-link` from the project directory.
 - Configure `DINEWAY_AUTH_SECRET`, `DINEWAY_PREVIEW_SECRET`, database auth tokens, and media storage credentials in the provider's secret system.
