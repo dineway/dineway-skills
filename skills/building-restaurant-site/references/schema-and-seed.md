@@ -4,6 +4,10 @@ The seed file (`seed/seed.json`) defines the site's entire schema and initial re
 
 Use this reference for mechanics. For restaurant sites, Blog, News, Menu, Reviews, and Gallery are required managed columns. Choose fields from the real enriched place data and do not create portfolio or placeholder demo structures.
 
+For restaurant sites, `seed/seed.json` must include non-empty published content arrays for `blog`, `news`, `menu`, `reviews`, and `gallery`. Creating a collection schema without published seed content is incomplete.
+
+The primary navigation menu in the seed must link required columns to `/menu`, `/reviews`, `/gallery`, `/blog`, and `/news`. Homepage anchors may be extra preview links, but they must not replace those route links.
+
 ## Seed File Structure
 
 ```json
@@ -454,6 +458,20 @@ Catches:
 - Reference fields with raw IDs (should use `$ref:id`)
 - PortableText not an array or missing `_type`
 - Type mismatches (string vs number, etc.)
+
+For restaurant sites, also validate that each required collection has published content after seeding. For local SQLite projects:
+
+```bash
+sqlite3 .dineway/data.db "
+select 'blog', count(*) from ec_blog where status = 'published'
+union all select 'news', count(*) from ec_news where status = 'published'
+union all select 'menu', count(*) from ec_menu where status = 'published'
+union all select 'reviews', count(*) from ec_reviews where status = 'published'
+union all select 'gallery', count(*) from ec_gallery where status = 'published';
+"
+```
+
+Every count must be greater than zero.
 
 ## Applying Seeds
 

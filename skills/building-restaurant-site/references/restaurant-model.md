@@ -25,6 +25,14 @@ For every generated restaurant site, keep promotional pages outside CMS but crea
 
 Do not create a generic `pages` collection just to manage the homepage or one-off marketing sections.
 
+## Required Public Pages
+
+The final public site must have distinct crawlable top-level pages at `/`, `/menu`, `/reviews`, `/gallery`, `/blog`, `/news`, and `/contact`.
+
+Homepage previews may exist, but they do not satisfy the required pages. Primary navigation and footer must link to `/menu`, `/reviews`, `/gallery`, `/blog`, and `/news`. Homepage anchor links such as `/#menu`, `/#reviews`, or `/#gallery` may only be secondary preview links; they must not replace the top-level page links.
+
+Each required CMS collection must contain seeded published content, and the corresponding public page must query and render that collection. Static or hardcoded fallback content alone does not satisfy a required CMS-managed column.
+
 ## Source Rules for Required Columns
 
 - Blog: extract valuable themes from reviews, `ugcPosts`, restaurant place posts, and place videos. Rewrite from the restaurant's point of view and tone while preserving factual grounding.
@@ -54,13 +62,13 @@ Choose sections from fields that are actually present:
 
 ## Page Responsibilities
 
-- Home: Astro page with hero, category/location summary, rating/review count, key CTAs, review highlights, and gallery preview.
-- Blog: CMS collection with review/`ugcPosts`/post/video-derived restaurant perspective articles.
-- News: CMS collection with verifiable updates from menu-update signals, `ugcPosts`, and place posts.
-- Menu: CMS collection or structured CMS content with review-backed menu introduction and any real menu items that are present.
-- Reviews: CMS collection or seeded content with selected real reviews and theme summaries.
-- Gallery: CMS collection with representative downloaded and uploaded images.
-- Contact/Location: Astro page or section with NAP, phone, maps link, coordinates, hours if present, route/call CTAs.
+- Home (`/`): Astro page with hero, category/location summary, rating/review count, key CTAs, review highlights, and gallery preview.
+- Blog (`/blog`): CMS collection with review/`ugcPosts`/post/video-derived restaurant perspective articles.
+- News (`/news`): CMS collection with verifiable updates from menu-update signals, `ugcPosts`, and place posts.
+- Menu (`/menu`): CMS collection or structured CMS content with review-backed menu introduction and any real menu items that are present.
+- Reviews (`/reviews`): CMS collection or seeded content with selected real reviews and theme summaries.
+- Gallery (`/gallery`): CMS collection with representative downloaded and uploaded images.
+- Contact/Location (`/contact`): Astro page with NAP, phone, maps link, coordinates, hours if present, route/call CTAs.
 
 ## Data-Density Decisions
 
@@ -80,4 +88,5 @@ When creating or updating Astro pages or `seed/seed.json`:
 - Before writing any public title, excerpt, body, caption, CTA, or metadata string, apply the customer visibility gate from `seo-and-design.md`. A line is allowed only when it is useful and appropriate for a real guest to read.
 - Use local downloaded assets in static Astro pages. Use uploaded Dineway media values in CMS-managed content fields.
 - Prefer fewer, better-supported pages over a large generic restaurant site.
+- Schema-only CMS collections are incomplete. If a required collection has no published seed content or the public page does not render it, the restaurant site is not done.
 - Do not publish internal source labels, verification caveats, implementation notes, or placeholders in public pages. Keep those notes in `.plan`, not in rendered site content.

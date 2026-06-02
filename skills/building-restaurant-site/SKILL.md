@@ -80,6 +80,8 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
    - Build promotional pages and sections as Astro pages/components first: Home, About/Snapshot, Location/Contact, trust signals, CTAs, SEO metadata, and JSON-LD.
    - Public Astro copy must be guest-facing restaurant copy. Do not render planning language, audit language, source labels, limitations, "real review" explanations, or notes about what was not verified.
    - Include visible navigation to Blog, News, Menu, Reviews, and Gallery.
+   - Hard page gate: the final public site must have distinct crawlable top-level pages at `/`, `/menu`, `/reviews`, `/gallery`, `/blog`, `/news`, and `/contact`. Homepage previews may exist, but homepage sections or anchors do not satisfy these required pages.
+   - Primary navigation and footer must link to `/menu`, `/reviews`, `/gallery`, `/blog`, and `/news`. Homepage anchor links such as `/#menu`, `/#reviews`, or `/#gallery` may only be secondary preview links; they must not replace the top-level page links.
    - Do not constrain the first design pass to Dineway CMS schemas, seed files, or editable blocks.
    - Keep static promotional content as standalone Astro code when it does not need ongoing CMS management.
    - This stage is not a deliverable stopping point. Never stop after static Astro output or offer to continue later.
@@ -94,6 +96,7 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
      - [references/site-features.md](references/site-features.md)
    - Create the site independently for this restaurant. Do not search for, copy, adapt, or reference Dineway templates or demo sites.
    - Blog, News, Menu, Reviews, and Gallery are required Dineway CMS-managed columns.
+   - Each required CMS collection must contain seeded published content, and the corresponding public page must query and render that collection. Static or hardcoded fallback content alone does not satisfy a required CMS-managed column.
    - Blog content must come from valuable themes extracted from reviews, `ugcPosts`, restaurant place posts, and place videos, rewritten from the restaurant's point of view without unsupported claims.
    - News content must come from menu-update signals, `ugcPosts`, restaurant place posts, and verifiable update-style source material. Do not fabricate dates, launches, specials, or announcements.
    - Menu content must combine real menu/menu-update signals with review-backed dish, flavor, service, or dining-experience themes. Do not invent dishes, prices, ingredients, or availability.
@@ -103,7 +106,7 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
    - Do not put hero, about, NAP/contact, static review summaries, or one-off promotional sections into Dineway CMS just because the project uses Dineway.
    - Upload local images into Dineway before using them in CMS-managed image fields; use `dineway/ui` `Image` for those Dineway image objects.
    - Preserve the completed Astro design and wire CMS content into it only at the boundaries selected above.
-   - Hard completion gate: do not send a final answer until Dineway collections/seed/content, media upload, queries, and rendered routes/sections for Blog, News, Menu, Reviews, and Gallery are implemented and validated.
+   - Hard completion gate: do not send a final answer until the distinct required pages, primary nav/footer links, Dineway collections, seeded published content, media upload where relevant, collection queries, and rendered CMS-backed pages for Blog, News, Menu, Reviews, and Gallery are implemented and validated.
 
 8. **Validate SEO, design, CMS boundaries, and runtime**
    - Read [references/seo-and-design.md](references/seo-and-design.md).
@@ -113,6 +116,32 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
    - Validate seed/content only for the CMS-managed pieces that were actually added.
    - Public copy must not expose internal rules, provenance labels, verification disclaimers, implementation notes, or placeholders. Remove phrases such as "source:", "based on real reviews", "from public review text", "review-visible facts", "not verified", "replace later", "placeholder", "extracted", "scraped", "verified facts", and similar wording from rendered pages.
    - Search the rendered/source content for the rejected phrasing patterns recorded in `Customer Visibility Filter`; revise any match into customer-safe restaurant copy or remove it.
+   - Validate required routes and navigation before final delivery:
+
+   ```bash
+   for path in / /menu /reviews /gallery /blog /news /contact; do
+     curl -fsSI "http://localhost:4321$path" >/dev/null
+   done
+
+   if rg 'href="/#(menu|reviews|gallery|blog|news)"' src/components src/layouts 2>/dev/null; then
+     echo "Replace required shared nav/footer anchors with top-level page links." >&2
+     exit 1
+   fi
+   ```
+
+   If homepage preview anchors exist, keep separate top-level page links visible in nav/footer.
+   - Validate seeded published content for each required CMS collection. For local SQLite projects, confirm each count is greater than zero:
+
+   ```bash
+   sqlite3 .dineway/data.db "
+   select 'blog', count(*) from ec_blog where status = 'published'
+   union all select 'news', count(*) from ec_news where status = 'published'
+   union all select 'menu', count(*) from ec_menu where status = 'published'
+   union all select 'reviews', count(*) from ec_reviews where status = 'published'
+   union all select 'gallery', count(*) from ec_gallery where status = 'published';
+   "
+   ```
+
    - Run the relevant Dineway typecheck/lint gates, start the dev server with `bgproc` when needed, and browser-test the rendered pages.
    - Never finish with "I can continue to Dineway CMS if you want". The Dineway CMS integration is required for completion.
 
