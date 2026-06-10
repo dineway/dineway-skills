@@ -1,4 +1,4 @@
 interface:
   display_name: "Build Restaurant Site"
   short_description: "Generate premium Dineway restaurant sites"
-  default_prompt: "Use $building-restaurant-site to build a high-quality Dineway restaurant website from a restaurant name, city, and optional placeId."
+  default_prompt: "Use $building-restaurant-site to build a high-quality Dineway restaurant website from a restaurant name, city, optional placeId, enriched place data, and the official websiteUri when present."
