@@ -532,7 +532,11 @@ function normalizeRestaurant(payload, sourcePath = "") {
 		postCount,
 		ugcPostCount: ugcPosts.length,
 		ugcPostImageCount: countNestedMediaItems(ugcPosts, ["imageUrls", "imageUrl"]),
-		ugcPostVideoCount: countNestedMediaItems(ugcPosts, ["videoUrls", "videoThumbnailUrls", "videos"]),
+		ugcPostVideoCount: countNestedMediaItems(ugcPosts, [
+			"videoUrls",
+			"videoThumbnailUrls",
+			"videos",
+		]),
 		videoCount,
 		menuSectionCount: menuList.length,
 		menuItemCount: countNestedArrayItems(menuList, "items"),
@@ -662,12 +666,7 @@ async function readImageDimensions(filePath) {
 			if (bytesRead < 8) return null;
 
 			// PNG: 8-byte signature then IHDR chunk with width/height at offset 16/20
-			if (
-				header[0] === 0x89 &&
-				header[1] === 0x50 &&
-				header[2] === 0x4e &&
-				header[3] === 0x47
-			) {
+			if (header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47) {
 				if (bytesRead >= 24) {
 					return {
 						width: header.readUInt32BE(16),
@@ -841,7 +840,8 @@ function mediaValueFromItem(item, fallback) {
 async function runSelect(inputPath, options) {
 	const manifest = await readJson(inputPath);
 	const downloaded = Array.isArray(manifest.downloaded) ? manifest.downloaded : [];
-	if (!options.pick) throw new Error("--pick is required (comma-separated 1-based indices, e.g. --pick 1,3,5,8)");
+	if (!options.pick)
+		throw new Error("--pick is required (comma-separated 1-based indices, e.g. --pick 1,3,5,8)");
 	const pickIndices = new Set(
 		String(options.pick)
 			.split(",")
@@ -868,7 +868,9 @@ async function runUpload(inputPath, options) {
 	const manifest = await readJson(inputPath);
 	const downloaded = Array.isArray(manifest.downloaded) ? manifest.downloaded : [];
 	const hasSelections = downloaded.some((item) => item.selected === true);
-	const itemsToUpload = hasSelections ? downloaded.filter((item) => item.selected === true) : downloaded;
+	const itemsToUpload = hasSelections
+		? downloaded.filter((item) => item.selected === true)
+		: downloaded;
 	const uploaded = [];
 	const failed = [];
 

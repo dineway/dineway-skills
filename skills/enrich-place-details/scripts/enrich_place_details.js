@@ -11,7 +11,14 @@ const DEFAULT_OUTPUT_DIR = "places";
 const DINEWAY_CONFIG_DIR = path.join(process.cwd(), ".dineway");
 const FORGEWAY_SECRET_PATH = path.join(DINEWAY_CONFIG_DIR, "forgeway.json");
 const DINEWAY_CONFIG_GITIGNORE = "*\n!.gitignore\n";
-const FOOD_TYPES = new Set(["restaurant", "cafe", "food", "meal_takeaway", "meal_delivery", "bakery"]);
+const FOOD_TYPES = new Set([
+	"restaurant",
+	"cafe",
+	"food",
+	"meal_takeaway",
+	"meal_delivery",
+	"bakery",
+]);
 const VALUE_FLAGS = new Map([
 	["--name", "name"],
 	["--restaurant", "name"],
@@ -198,7 +205,10 @@ function readForgewaySecretStore() {
 function writeForgewayShadowGrant(auth, options) {
 	if (!auth?.accessToken || !auth?.refreshToken || !auth?.placeId) return false;
 	const store = readForgewaySecretStore();
-	const platformApiUrl = String(options.baseUrl || DEFAULT_BASE_URL).replace(TRAILING_SLASHES_RE, "");
+	const platformApiUrl = String(options.baseUrl || DEFAULT_BASE_URL).replace(
+		TRAILING_SLASHES_RE,
+		"",
+	);
 	const key = shadowGrantKey(platformApiUrl, auth.placeId);
 	const grant = {
 		platformApiUrl,
@@ -212,7 +222,8 @@ function writeForgewayShadowGrant(auth, options) {
 					id: auth.user.id,
 					name: auth.user.profile?.name || auth.user.name || auth.user.email,
 					email: auth.user.email,
-					avatarUrl: auth.user.profile?.avatar_url || auth.user.avatarUrl || auth.user.avatar_url || null,
+					avatarUrl:
+						auth.user.profile?.avatar_url || auth.user.avatarUrl || auth.user.avatar_url || null,
 					emailVerified: auth.user.emailVerified ?? auth.user.email_verified ?? true,
 				}
 			: undefined,
@@ -344,7 +355,10 @@ function scoreNameMatch(queryName, candidateNames) {
 		} else if (currentName.includes(queryName)) {
 			score = 80;
 			reason = "candidate_contains_name";
-		} else if (queryName.includes(currentName) && currentName.length >= Math.min(4, queryName.length)) {
+		} else if (
+			queryName.includes(currentName) &&
+			currentName.length >= Math.min(4, queryName.length)
+		) {
 			score = 45;
 			reason = "query_contains_candidate_name";
 		}
@@ -394,12 +408,19 @@ function compactCandidate(candidate, matchContext) {
 	const match = matchContext ? scoreCandidate(candidate, matchContext) : null;
 	return {
 		placeId: candidatePlaceId(candidate),
-		displayName: candidate.displayName ?? candidate.name ?? candidate.businessName ?? candidate.title ?? null,
+		displayName:
+			candidate.displayName ?? candidate.name ?? candidate.businessName ?? candidate.title ?? null,
 		formattedAddress:
-			candidate.formattedAddress ?? candidate.shortFormattedAddress ?? candidate.address ?? candidate.vicinity ?? null,
+			candidate.formattedAddress ??
+			candidate.shortFormattedAddress ??
+			candidate.address ??
+			candidate.vicinity ??
+			null,
 		types:
 			candidate.types ??
-			(candidate.primaryType || candidate.primary_type ? [candidate.primaryType ?? candidate.primary_type] : null),
+			(candidate.primaryType || candidate.primary_type
+				? [candidate.primaryType ?? candidate.primary_type]
+				: null),
 		rating: candidate.rating ?? null,
 		userRatingCount: candidate.userRatingCount ?? candidate.user_ratings_total ?? null,
 		priceLevel: candidate.priceLevel ?? null,
@@ -439,7 +460,9 @@ function scoreCandidate(candidate, { name, city, providedPlaceId }) {
 		reasons.push("food_type");
 	}
 
-	const businessStatus = String(candidate.businessStatus ?? candidate.business_status ?? "").toUpperCase();
+	const businessStatus = String(
+		candidate.businessStatus ?? candidate.business_status ?? "",
+	).toUpperCase();
 	if (businessStatus === "OPERATIONAL") {
 		score += 4;
 		reasons.push("operational");
@@ -526,8 +549,10 @@ async function fetchJson(url, { method = "GET", headers = {}, body, timeoutMs })
 }
 
 function extractTokens(payload, context) {
-	const accessToken = payload?.accessToken ?? payload?.data?.accessToken ?? payload?.tokens?.accessToken;
-	const refreshToken = payload?.refreshToken ?? payload?.data?.refreshToken ?? payload?.tokens?.refreshToken;
+	const accessToken =
+		payload?.accessToken ?? payload?.data?.accessToken ?? payload?.tokens?.accessToken;
+	const refreshToken =
+		payload?.refreshToken ?? payload?.data?.refreshToken ?? payload?.tokens?.refreshToken;
 	if (typeof accessToken !== "string" || !accessToken) {
 		throw new Error(`${context} response did not include accessToken`);
 	}
@@ -568,7 +593,11 @@ async function refreshAuth(auth, { baseUrl, timeoutMs }) {
 	return auth;
 }
 
-async function fetchWithAuth(auth, endpointPath, { baseUrl, timeoutMs, method = "GET", body } = {}) {
+async function fetchWithAuth(
+	auth,
+	endpointPath,
+	{ baseUrl, timeoutMs, method = "GET", body } = {},
+) {
 	const headers = {
 		Authorization: `Bearer ${auth.accessToken}`,
 	};
@@ -671,10 +700,14 @@ async function enrichPlaceDetails(options) {
 			})
 		: initialAuth;
 
-	const detailResponse = await fetchWithAuth(finalAuth, `/api/places/${encodeURIComponent(finalPlaceId)}`, {
-		baseUrl: options.baseUrl,
-		timeoutMs: options.timeoutMs,
-	});
+	const detailResponse = await fetchWithAuth(
+		finalAuth,
+		`/api/places/${encodeURIComponent(finalPlaceId)}`,
+		{
+			baseUrl: options.baseUrl,
+			timeoutMs: options.timeoutMs,
+		},
+	);
 
 	const selectedPlace = {
 		placeId: finalPlaceId,
@@ -699,7 +732,8 @@ async function enrichPlaceDetails(options) {
 		},
 		search: {
 			resultCount: candidates.length,
-			selectionReason: selected?.reason ?? (providedPlaceId ? "provided_place_id_no_search_match" : "none"),
+			selectionReason:
+				selected?.reason ?? (providedPlaceId ? "provided_place_id_no_search_match" : "none"),
 			selectedCandidate: compactCandidate(selectedCandidate, matchContext),
 		},
 		selectedPlace,
@@ -713,7 +747,9 @@ async function enrichPlaceDetails(options) {
 	};
 
 	if (options.includeCandidates) {
-		result.search.candidates = candidates.map((candidate) => compactCandidate(candidate, matchContext));
+		result.search.candidates = candidates.map((candidate) =>
+			compactCandidate(candidate, matchContext),
+		);
 	}
 
 	return result;
@@ -736,7 +772,9 @@ async function main() {
 
 	const missing = missingInputs(options);
 	if (missing.length > 0) {
-		console.error(`Missing required input: ${missing.join(" and ")}. Provide both restaurant name and city.`);
+		console.error(
+			`Missing required input: ${missing.join(" and ")}. Provide both restaurant name and city.`,
+		);
 		return 2;
 	}
 
@@ -747,7 +785,11 @@ async function main() {
 		const savedPayload = options.detailsOnly ? publicPayload.placeDetails : publicPayload;
 		const placeId = publicPayload.selectedPlace?.placeId ?? publicPayload.authFlow?.finalPlaceId;
 		const savedFile = writePlaceJson(savedPayload, placeId, options.outputDir);
-		const output = buildSavedOutputSummary(publicPayload, savedFile, options.detailsOnly ? "placeDetails" : "fullPayload");
+		const output = buildSavedOutputSummary(
+			publicPayload,
+			savedFile,
+			options.detailsOnly ? "placeDetails" : "fullPayload",
+		);
 		output.savedShadowGrant = savedAuth;
 		console.log(JSON.stringify(output, null, options.compact ? 0 : 2));
 		return 0;

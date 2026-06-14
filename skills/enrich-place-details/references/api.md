@@ -10,8 +10,8 @@ Body:
 
 ```json
 {
-  "placeId": "ChIJs5ydyTiuEmsR0fRSlU0C7k0",
-  "language": "en"
+	"placeId": "ChIJs5ydyTiuEmsR0fRSlU0C7k0",
+	"language": "en"
 }
 ```
 
@@ -46,7 +46,7 @@ Body:
 
 ```json
 {
-  "refreshToken": "..."
+	"refreshToken": "..."
 }
 ```
 
@@ -69,7 +69,7 @@ Body:
 
 ```json
 {
-  "textQuery": "Peace Harmony in Sydney, Australia"
+	"textQuery": "Peace Harmony in Sydney, Australia"
 }
 ```
 
@@ -88,8 +88,8 @@ Observed `places[]` candidate keys can include:
 
 ```json
 {
-  "text": "Peace Harmony",
-  "languageCode": "en"
+	"text": "Peace Harmony",
+	"languageCode": "en"
 }
 ```
 

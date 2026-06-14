@@ -284,6 +284,21 @@ Use in your layout's `<head>`:
 {seo.robots && <meta name="robots" content={seo.robots} />}
 ```
 
+## Sitemap and Schema Map
+
+Dineway provides `/sitemap.xml` from collections that have `supports` including `seo`. The SEO Graph plugin provides the schema-map data endpoint; expose it through a public `src/pages/schemamap.xml.ts` route and register `seoGraphPlugin()` in `astro.config.mjs`.
+
+Requirements for every routable restaurant CMS collection:
+
+- `supports` includes `seo`
+- `urlPattern` matches the rendered Astro route and contains `{slug}`
+- The public detail route renders the collection entry and passes `content: { collection, id, slug }` to `createPublicPageContext`
+
+Production requirements:
+
+- Set `siteUrl` or `DINEWAY_SITE_URL` when the public origin differs from the request origin.
+- Validate `/robots.txt`, `/sitemap.xml`, and `/schemamap.xml`.
+
 ## Comments
 
 Built-in comments system:

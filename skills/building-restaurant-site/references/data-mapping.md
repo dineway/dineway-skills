@@ -21,8 +21,8 @@ Map fields conservatively:
 | Opening hours    | `placeDetails.regularOpeningHours.weekdayDescriptions`, `placeDetails.currentOpeningHours.weekdayDescriptions`                           |
 | Reviews          | `placeDetails.reviews`                                                                                                                   |
 | Images           | `placeDetails.photos`, `placeDetails.photoList`, `placeDetails.placeImageList`, `placeDetails.aiPhotoList`, selected-place fallbacks     |
-| Menu             | `placeDetails.menuList`, `placeDetails.menuImages`                                                                                        |
-| UGC posts        | `placeDetails.ugcPosts`                                                                                                                   |
+| Menu             | `placeDetails.menuList`, `placeDetails.menuImages`                                                                                       |
+| UGC posts        | `placeDetails.ugcPosts`                                                                                                                  |
 | Other posts      | `placeDetails.posts`, `placeDetails.postList`, `placeDetails.placePostList`, selected-place post fallbacks                               |
 | Videos           | `placeDetails.videos`, `placeDetails.videoList`, `placeDetails.placeVideoList`, `placeDetails.extraVideos`, selected-place fallbacks     |
 | Review media     | `placeDetails.extImageReviews`, `placeDetails.reviewImageList`, `placeDetails.reviewVideoList`                                           |

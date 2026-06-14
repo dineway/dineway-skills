@@ -173,11 +173,12 @@ Provider CLI rules:
 
 Persistence and secrets:
 
-- The selected target is stored in `package.json` under `.dineway/deploy.json` after a successful deploy or generation.
+- The selected target is stored in `.dineway/deploy.json` after a successful deploy or generation.
 - Generated provider files are not overwritten when they already exist.
 - Generated provider files must not contain secrets.
 - Forgeway deploy writes `DINEWAY_SITE_URL` and `DINEWAY_TOKEN` to project `.env`, adds `.env` to `.gitignore`, prints a one-time setup link, and does not print the raw admin API token.
-- Forgeway uses the Dineway account email as the initial deployed-site admin email. Shadow users cannot deploy; the CLI upgrades the shadow grant through email verification before deploy.
+- Forgeway uses the Dineway account email as the initial deployed-site admin email. Shadow users cannot deploy; the CLI reuses cached verified formal account credentials when available and upgrades the project shadow grant through email verification only when needed.
+- On a computer with multiple cached Dineway accounts, pass `--email` or set `DINEWAY_EMAIL` unless the project already has a saved `publisherEmail` in `.dineway/deploy.json`.
 - For non-interactive agents, run Forgeway deploy first with `--email <email> --send-otp` to send the verification code and exit, then rerun with the same restaurant/site options and `--email <email> --otp <code>` to verify the existing code and deploy. `--otp` does not send a new code.
 - First Forgeway browser login should use the setup link, then register a passkey. Magic link login requires a site email provider and is not part of admin bootstrap.
 - Regenerate a lost or expired Forgeway setup link with `npx dineway auth setup-link` from the project directory.

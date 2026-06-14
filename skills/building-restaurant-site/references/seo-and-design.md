@@ -23,6 +23,15 @@ Use `Restaurant` JSON-LD when restaurant-specific fields are available. Use `Loc
 - `openingHoursSpecification` only when real hours are present
 - `image` only for downloaded local assets or uploaded media with a resolvable public URL
 
+Do not add JSON-LD properties just because a restaurant schema type supports them. Omit any `menu`, `servesCuisine`, `openingHoursSpecification`, `sameAs`, `acceptsReservations`, `hasMenu`, `makesOffer`, `priceRange`, social profile, reservation, order, or delivery field unless it is present in the enriched JSON or official website extraction and recorded in `findings.md`.
+
+Dineway discovery requirements:
+
+- `siteUrl` or `DINEWAY_SITE_URL` must resolve the public origin for production JSON-LD, sitemap, robots, MCP discovery, and schemamap URLs.
+- Layouts must render `DinewayHead`.
+- Routable CMS collections must include `supports: ["seo"]` and `urlPattern`.
+- Final validation must hit `/robots.txt`, `/sitemap.xml`, and `/schemamap.xml`.
+
 Use enriched local signals outside JSON-LD as well:
 
 - Use `addressDescriptor.areas` and `addressDescriptor.landmarks` for concise local-area and arrival guidance.

@@ -39,11 +39,17 @@ Collections define content types. Each collection becomes a database table (`ec_
 	"slug": "posts",
 	"label": "Posts",
 	"labelSingular": "Post",
+	"urlPattern": "/posts/{slug}",
 	"supports": ["drafts", "revisions", "search", "seo"],
 	"commentsEnabled": true,
 	"fields": [ ... ]
 }
 ```
+
+Every routable restaurant collection must include:
+
+- `supports` with `seo`, so `/sitemap.xml` includes published entries and editors can manage SEO fields.
+- `urlPattern` with `{slug}`, so `/schemamap.xml` and URL helpers can resolve the public detail route. Match the Astro route exactly, such as `/blog/{slug}`, `/news/{slug}`, `/menu/{slug}`, `/reviews/{slug}`, or `/gallery/{slug}`.
 
 ### Collection Supports
 
@@ -100,6 +106,8 @@ Fields can have:
 **Blog post:**
 
 ```json
+"urlPattern": "/blog/{slug}",
+"supports": ["drafts", "revisions", "search", "seo"],
 "fields": [
 	{ "slug": "title", "label": "Title", "type": "string", "required": true, "searchable": true },
 	{ "slug": "featured_image", "label": "Featured Image", "type": "image" },

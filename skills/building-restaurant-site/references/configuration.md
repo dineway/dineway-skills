@@ -9,25 +9,17 @@ Use this for the Dineway configuration mechanics needed by `building-restaurant-
 ```javascript
 import node from "@astrojs/node";
 import react from "@astrojs/react";
+import { seoGraphPlugin } from "@dineway-ai/plugin-seo-graph";
 import { defineConfig } from "astro/config";
 import dineway, { local, s3 } from "dineway/astro";
 import { libsql } from "dineway/db";
 
 const databaseUrl = process.env.DINEWAY_DATABASE_URL || "file:./data.db";
 const databaseAuthToken = process.env.DINEWAY_DATABASE_AUTH_TOKEN;
-const storage = import.meta.env.PROD
-	? s3({
-			endpoint: process.env.S3_ENDPOINT,
-			bucket: process.env.S3_BUCKET,
-			accessKeyId: process.env.S3_ACCESS_KEY_ID,
-			secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-			region: process.env.S3_REGION || "auto",
-			publicUrl: process.env.S3_PUBLIC_URL,
-		})
-	: local({
-			directory: "./uploads",
-			baseUrl: "/_dineway/api/media/file",
-		});
+const storage = local({
+	directory: "./uploads",
+	baseUrl: "/_dineway/api/media/file",
+});
 
 export default defineConfig({
 	output: "server",
@@ -41,6 +33,7 @@ export default defineConfig({
 		dineway({
 			database: libsql({ url: databaseUrl, authToken: databaseAuthToken }),
 			storage,
+			plugins: [seoGraphPlugin()],
 		}),
 	],
 	devToolbar: { enabled: false },
@@ -69,7 +62,7 @@ DINEWAY_SITE_URL=https://mysite.example.com
 # or: SITE_URL=https://mysite.example.com
 ```
 
-`siteUrl` replaces `passkeyPublicOrigin` (which only fixed passkeys). It applies to passkeys, CSRF origin matching, OAuth redirects, login redirects, MCP discovery, snapshot exports, sitemap, robots.txt, and JSON-LD structured data.
+`siteUrl` replaces `passkeyPublicOrigin` (which only fixed passkeys). It applies to passkeys, CSRF origin matching, OAuth redirects, login redirects, MCP discovery, snapshot exports, sitemap, robots.txt, schemamap, and JSON-LD structured data. Production restaurant builds must set `siteUrl` or `DINEWAY_SITE_URL` whenever the request origin is not the public browser-facing origin.
 
 With TLS terminated in front, **`astro dev --host 127.0.0.1`** (loopback) is usually enough: the proxy reaches the dev server locally while **`siteUrl`** matches the browser’s HTTPS origin -- without opening the Node port on the LAN.
 
@@ -82,7 +75,7 @@ npx dineway deploy forgeway
 ```
 
 - Use the prompt label and language **Dineway account email**.
-- A project can start from a shadow user, but Forgeway does not allow shadow users to deploy. The CLI upgrades the shadow grant through email verification and deploys with the verified formal Dineway account credentials.
+- A project can start from a shadow user, but Forgeway does not allow shadow users to deploy. The CLI reuses cached verified formal Dineway account credentials when available, or upgrades the shadow grant through email verification when needed.
 - The Dineway account email becomes the initial deployed-site admin email.
 - After a successful deploy, the CLI writes `DINEWAY_SITE_URL` and `DINEWAY_TOKEN` to project `.env`, adds `.env` to `.gitignore`, and avoids printing the raw admin API token.
 - Follow-up remote CLI commands should work from the project directory, for example `npx dineway whoami` and `npx dineway content list posts`.
@@ -96,13 +89,16 @@ Register plugins in `astro.config.mjs`:
 
 ```javascript
 import { auditLogPlugin } from "@dineway-ai/plugin-audit-log";
+import { seoGraphPlugin } from "@dineway-ai/plugin-seo-graph";
 
 dineway({
 	database: sqlite({ url: "file:./data.db" }),
 	storage: local({ directory: "./uploads", baseUrl: "/_dineway/api/media/file" }),
-	plugins: [auditLogPlugin()],
+	plugins: [seoGraphPlugin(), auditLogPlugin()],
 }),
 ```
+
+`seoGraphPlugin()` is required for the schema-map API. Add a public Astro route at `src/pages/schemamap.xml.ts` that proxies `POST /_dineway/api/plugins/seo-graph/schema/map`, then validate `/schemamap.xml` alongside `/robots.txt` and `/sitemap.xml`.
 
 ## live.config.ts
 
@@ -181,7 +177,7 @@ Key dependencies for a standalone Node.js site:
 		"@astrojs/node": "^10.1.0",
 		"@astrojs/react": "^5.0.0",
 		"astro": "^6.3.0",
-		"dineway": "^0.1.43",
+		"dineway": "^0.1.48",
 		"react": "^18.0.0",
 		"react-dom": "^18.0.0"
 	}

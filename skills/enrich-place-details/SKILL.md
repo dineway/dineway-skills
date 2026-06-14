@@ -54,11 +54,11 @@ Stdout is intentionally compact:
 
 ```json
 {
-  "placeId": "ChIJs5ydyTiuEmsR0fRSlU0C7k0",
-  "placeDetailsPath": "places/ChIJs5ydyTiuEmsR0fRSlU0C7k0.json",
-  "savedPayload": "fullPayload",
-  "selectedPlace": { "...": "selected place summary" },
-  "search": { "...": "candidate count, selected candidate, match score, and match reason" }
+	"placeId": "ChIJs5ydyTiuEmsR0fRSlU0C7k0",
+	"placeDetailsPath": "places/ChIJs5ydyTiuEmsR0fRSlU0C7k0.json",
+	"savedPayload": "fullPayload",
+	"selectedPlace": { "...": "selected place summary" },
+	"search": { "...": "candidate count, selected candidate, match score, and match reason" }
 }
 ```
 

@@ -90,6 +90,9 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
 7. **Design and build the Astro-first site**
    - Use `$frontend-design` to implement the visible restaurant site from the chosen design brief, enriched JSON, and downloaded local images.
    - Build promotional pages and sections as Astro pages/components first: Home, About/Snapshot, Location/Contact, trust signals, CTAs, SEO metadata, and JSON-LD.
+   - Production configuration must provide a public origin via `siteUrl` or `DINEWAY_SITE_URL` before final validation; do not rely on an internal localhost origin for JSON-LD, sitemap, robots, MCP discovery, or schema map URLs.
+   - Register `seoGraphPlugin()` in `astro.config.mjs` and add a public `/schemamap.xml` Astro route that proxies `/_dineway/api/plugins/seo-graph/schema/map`.
+   - Shared layouts must create a public page context and render `DinewayHead`; content-backed pages must pass `content: { collection, id, slug }`.
    - Public Astro copy must be guest-facing restaurant copy. Do not render planning language, audit language, source labels, limitations, "real review" explanations, or notes about what was not verified.
    - Include visible navigation to Blog, News, Menu, Reviews, and Gallery.
    - Hard page gate: the final public site must have distinct crawlable top-level pages at `/`, `/menu`, `/reviews`, `/gallery`, `/blog`, `/news`, and `/contact`. Homepage previews may exist, but homepage sections or anchors do not satisfy these required pages.
@@ -108,6 +111,7 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
      - [references/site-features.md](references/site-features.md)
    - Create the site independently for this restaurant. Do not search for, copy, adapt, or reference Dineway templates or demo sites.
    - Blog, News, Menu, Reviews, and Gallery are required Dineway CMS-managed columns.
+   - Every required CMS collection must include `supports: ["seo"]` and a `urlPattern` matching its public route, for example `/blog/{slug}`, `/news/{slug}`, `/menu/{slug}`, `/reviews/{slug}`, or `/gallery/{slug}`. If a collection is rendered as a top-level listing only, give each seeded entry a real detail route or use a collection design whose `urlPattern` is routable.
    - Each required CMS collection must contain seeded published content, and the corresponding public page must query and render that collection. Static or hardcoded fallback content alone does not satisfy a required CMS-managed column.
    - Blog content must come from valuable themes extracted from reviews, `ugcPosts`, restaurant place posts, place videos, and official website pages, rewritten from the restaurant's point of view without unsupported claims.
    - News content must come from menu-update signals, `ugcPosts`, restaurant place posts, official website announcements, and other verifiable update-style source material. Do not fabricate dates, launches, specials, or announcements.
@@ -123,7 +127,7 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
 9. **Validate SEO, design, CMS boundaries, and runtime**
    - Read [references/seo-and-design.md](references/seo-and-design.md).
    - Each page gets one `<h1>`, page-specific title and description, crawlable internal links, mobile-first responsive layout, and lazy-loaded images.
-   - Add `Restaurant` or `LocalBusiness` JSON-LD only with fields present in the enriched JSON or the official website extraction.
+   - Add `Restaurant` or `LocalBusiness` JSON-LD only with real fields present in the enriched JSON or official website extraction. Never invent menu items, cuisines, hours, social profiles, offer data, reservation links, delivery links, awards, or sameAs URLs for JSON-LD.
    - Verify static Astro promotional pages still render without CMS content.
    - Validate seed/content only for the CMS-managed pieces that were actually added.
    - Public copy must not expose internal rules, provenance labels, verification disclaimers, implementation notes, or placeholders. Remove phrases such as "source:", "based on real reviews", "from public review text", "review-visible facts", "not verified", "replace later", "placeholder", "extracted", "scraped", "verified facts", and similar wording from rendered pages.
@@ -132,6 +136,10 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
 
    ```bash
    for path in / /menu /reviews /gallery /blog /news /contact; do
+     curl -fsSI "http://localhost:4321$path" >/dev/null
+   done
+
+   for path in /robots.txt /sitemap.xml /schemamap.xml; do
      curl -fsSI "http://localhost:4321$path" >/dev/null
    done
 
@@ -188,13 +196,13 @@ Use the helper when it saves time, but still inspect the JSON and make the final
 
 ## Reference Documents
 
-| File                                                                             | Use                                                             |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [references/data-mapping.md](references/data-mapping.md)                         | Field mapping from `enrich-place-details` payloads              |
-| [references/media-pipeline.md](references/media-pipeline.md)                     | Local photo download and Dineway upload workflow                |
-| [references/restaurant-model.md](references/restaurant-model.md)                 | Required columns, Astro-first design, and CMS boundary rules    |
-| [references/configuration.md](references/configuration.md)                       | Local Dineway/Astro configuration and runtime setup             |
-| [references/schema-and-seed.md](references/schema-and-seed.md)                   | Seed schema, fields, menus, sections, media, and validation     |
-| [references/querying-and-rendering.md](references/querying-and-rendering.md)     | Dineway content queries, Portable Text, Image, and cache rules  |
-| [references/site-features.md](references/site-features.md)                       | Settings, menus, taxonomies, widgets, search, and SEO helpers   |
-| [references/seo-and-design.md](references/seo-and-design.md)                     | Local SEO, JSON-LD, IA, copy, and visual direction rules        |
+| File                                                                         | Use                                                            |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| [references/data-mapping.md](references/data-mapping.md)                     | Field mapping from `enrich-place-details` payloads             |
+| [references/media-pipeline.md](references/media-pipeline.md)                 | Local photo download and Dineway upload workflow               |
+| [references/restaurant-model.md](references/restaurant-model.md)             | Required columns, Astro-first design, and CMS boundary rules   |
+| [references/configuration.md](references/configuration.md)                   | Local Dineway/Astro configuration and runtime setup            |
+| [references/schema-and-seed.md](references/schema-and-seed.md)               | Seed schema, fields, menus, sections, media, and validation    |
+| [references/querying-and-rendering.md](references/querying-and-rendering.md) | Dineway content queries, Portable Text, Image, and cache rules |
+| [references/site-features.md](references/site-features.md)                   | Settings, menus, taxonomies, widgets, search, and SEO helpers  |
+| [references/seo-and-design.md](references/seo-and-design.md)                 | Local SEO, JSON-LD, IA, copy, and visual direction rules       |
