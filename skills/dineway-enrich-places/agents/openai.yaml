@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Enrich Places"
+  short_description: "Fetch and save Dineway restaurant details"
+  default_prompt: "Use $dineway-enrich-places to fetch enriched restaurant details from Dineway by restaurant name and city, then save the full payload to places/{placeId}.json."
