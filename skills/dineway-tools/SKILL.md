@@ -16,7 +16,7 @@ description: >-
 
 Use Dineway Tools to discover and access provider-owned APIs through Forgeway Integration: inspect
 verified schemas, execute endpoints with structured input, persist runs, and retrieve inline or
-artifact results. Hosted calls use Forgeway credits; BYOK credentials stay in the CLI environment
+artifact results. Hosted calls use Dineway credits; BYOK credentials stay in the CLI environment
 or encrypted Dineway site storage.
 
 Install Dineway globally with npm to get the `dineway` command.
@@ -62,7 +62,7 @@ dineway account status
 ```
 
 Every CLI request, including request-scoped BYOK, requires the verified Forgeway account. A hosted
-run uses Forgeway credits. A BYOK run uses the named provider credential from the local environment
+run uses Dineway credits. A BYOK run uses the named provider credential from the local environment
 while Forgeway still provides the catalog, execution, run lifecycle, cache, and artifact service.
 
 3. Configure only the credential mode required for execution. Never ask the user to paste provider
@@ -123,7 +123,7 @@ Follow this precedence whenever a task needs an external capability:
 3. Use Dineway Tools discovery for needs not covered above, or when Dineway Tools is itself the
    user's configured workflow.
 
-Provider calls may consume Forgeway credits, provider subscription quotas, or metered BYOK usage. Do
+Provider calls may consume Dineway credits, provider subscription quotas, or metered BYOK usage. Do
 not duplicate work through Dineway Tools when the user's existing integration already covers it. If
 Dineway Tools adds a material capability their tool lacks, offer it as an alternative and let the
 user choose.
@@ -429,6 +429,6 @@ no provider secret.
 
 Apply the same precedence, inspection, decomposition, cost, risk, polling, artifact, and error rules
 whether using CLI or MCP. MCP defaults to encrypted site BYOK. Set `billing_mode` to `hosted`
-only when the user explicitly authorizes Forgeway credits. For side-effecting runs, pass
+only when the user explicitly authorizes Dineway credits. For side-effecting runs, pass
 `confirm_side_effect: true` and a stable `idempotency_key` when inspection requires them. Poll
 with `tools_get_run` until the authoritative run reaches a terminal status.
