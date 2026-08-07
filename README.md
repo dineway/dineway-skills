@@ -40,6 +40,85 @@ The skill pack contains several specialized skills that cooperate to build your 
 | 🎨 **`dineway-frontend-design`** | UX/UI Designer | Designs a beautiful, premium, mobile-first website using Astro and vanilla CSS (no generic templates). |
 | 🛠️ **`dineway-cli`** | Developer | Handles database setup, imports content seed files, uploads local media, and handles remote admin features. |
 | 🍕 **`dineway-building-restaurant`** | Orchestrator | Ties everything together, ensuring the site has a Blog, News updates, Menu, Reviews, and a Gallery. |
+| 🔌 **`dineway-tools`** | External API Gateway | Discovers and runs hundreds of provider-owned endpoints (web scraping, social media, SEO, data enrichment, media generation) through Dineway Platform. |
+
+---
+
+## 🔌 Dineway Tools — Access Hundreds of External APIs
+
+`dineway-tools` gives your AI agent access to a vast, searchable catalog of provider-owned API endpoints through **Dineway Platform**. Instead of writing custom scrapers or telling users that data is inaccessible, the agent can discover and run verified endpoints for web scraping, social media data, SEO analysis, company/people enrichment, content monitoring, media generation, and more.
+
+### Setup
+
+```bash
+# Install or update the Dineway CLI
+npm install -g dineway@latest
+
+# Authenticate your Forgeway account
+dineway account login
+dineway account status
+```
+
+### How It Works: Discover → Inspect → Run
+
+The standard workflow has three steps:
+
+**1. Discover** — Search the catalog for what you need:
+```bash
+dineway tools discover -q "twitter posts"
+dineway tools discover -q "google maps reviews"
+dineway tools discover -q "company enrichment"
+```
+
+**2. Inspect** — Read the endpoint contract (inputs, pricing, risk) before running:
+```bash
+dineway tools inspect -p apify -e /apidojo/tweet-scraper
+```
+
+**3. Run** — Execute the endpoint and retrieve results:
+```bash
+# Fire-and-poll (recommended for interactive use)
+dineway tools run -p apify -e /apidojo/tweet-scraper \
+  -i '{"searchTerms":["AI agents"],"maxItems":10}'
+dineway tools runs get -r <run-id>
+
+# Or block until complete
+dineway tools run -p apify -e /apidojo/tweet-scraper \
+  -i '{"searchTerms":["AI agents"],"maxItems":10}' \
+  --wait --wait-timeout 60 --output tweets.json
+```
+
+### Credential Modes
+
+| Mode | How it works |
+| --- | --- |
+| **Hosted (default)** | Uses Forgeway credits — no provider API key needed. |
+| **BYOK (Bring Your Own Key)** | Set the provider key as an environment variable and pass its name via `--credential-token-env`. Your key is never sent through the conversation. |
+| **Site BYOK (MCP)** | Admin configures encrypted provider credentials under **Settings → Integrations** in the Dineway admin panel. |
+
+### MCP Alternative
+
+If your agent host supports MCP, connect it to your Dineway site's endpoint instead of using the CLI:
+
+```json
+{
+  "mcpServers": {
+    "dineway": {
+      "type": "http",
+      "url": "https://your-site.com/_dineway/api/mcp"
+    }
+  }
+}
+```
+
+MCP exposes `tools_discover`, `tools_inspect`, `tools_run`, `tools_get_run`, `tools_list_runs`, and `tools_stop_run`.
+
+### Cost Awareness
+
+> [!IMPORTANT]
+> Endpoints may consume Forgeway credits or provider quotas per call. Always inspect pricing before running, start with small limits (5–10 results), and scale up only after confirming result quality.
+
+For the full command reference, credential configuration, and troubleshooting, see the [dineway-tools SKILL.md](skills/dineway-tools/SKILL.md).
 
 ---
 

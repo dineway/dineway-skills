@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Tools"
+  short_description: "Proactively discover and run Forgeway endpoints"
+  default_prompt: "Use $dineway-tools to proactively discover and inspect the best available Forgeway endpoint before safely running it for this task."
