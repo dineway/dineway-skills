@@ -24,7 +24,7 @@ npx skills add https://github.com/dineway/dineway-skills
 Once installed, simply tell the agent:
 
 ```text
-Use building-restaurant-site to build an AI-ready Dineway restaurant site for "YOUR RESTAURANT NAME" in "YOUR CITY, COUNTRY".
+Use dineway-building-restaurant to build an AI-ready Dineway restaurant site for "YOUR RESTAURANT NAME" in "YOUR CITY, COUNTRY".
 ```
 
 ---
@@ -35,11 +35,11 @@ The skill pack contains several specialized skills that cooperate to build your 
 
 | Skill Name | Role | What it Automates |
 | --- | --- | --- |
-| 📍 **`enrich-place-details`** | Data Researcher | Searches Google Places, retrieves your business address, phone, opening hours, popular reviews, and public photos. |
-| 🧠 **`brainstorming`** | Creative Planner | Compares visual themes, maps out information architecture, and defines what parts of the site need CMS control. |
-| 🎨 **`frontend-design`** | UX/UI Designer | Designs a beautiful, premium, mobile-first website using Astro and vanilla CSS (no generic templates). |
+| 📍 **`dineway-enrich-places`** | Data Researcher | Searches Google Places, retrieves your business address, phone, opening hours, popular reviews, and public photos. |
+| 🧠 **`dineway-brainstorming`** | Creative Planner | Explores project directions, clarifies requirements, compares design alternatives, and presents a confirmed design for user approval. |
+| 🎨 **`dineway-frontend-design`** | UX/UI Designer | Designs a beautiful, premium, mobile-first website using Astro and vanilla CSS (no generic templates). |
 | 🛠️ **`dineway-cli`** | Developer | Handles database setup, imports content seed files, uploads local media, and handles remote admin features. |
-| 🍕 **`building-restaurant-site`** | Orchestrator | Ties everything together, ensuring the site has a Blog, News updates, Menu, Reviews, and a Gallery. |
+| 🍕 **`dineway-building-restaurant`** | Orchestrator | Ties everything together, ensuring the site has a Blog, News updates, Menu, Reviews, and a Gallery. |
 
 ---
 
@@ -59,16 +59,16 @@ graph TD
 ```
 
 ### 1. Business Research & Data Enrichment
-The agent uses `enrich-place-details` to search for your restaurant. It fetches real business facts, real-customer reviews, and media assets. No placeholders or fake content will be generated.
+The agent uses `dineway-enrich-places` to search for your restaurant. It fetches real business facts, real-customer reviews, and media assets. No placeholders or fake content will be generated.
 
 ### 2. Branding & Content Strategy
-Using `brainstorming`, the agent extracts:
+Using `dineway-brainstorming`, the agent extracts:
 - **Brand Voice**: Adapts copy to reflect your true restaurant style (e.g., cozy neighborhood bistro, high-end fine dining).
 - **Core Themes**: Discovers popular dishes, service highlights, and atmospheric comments from reviews to create authentic blog posts and news.
 - **Customer Visibility Filter**: Ensures no technical jargon, developer notes, or scraping remarks appear on your public website.
 
 ### 3. Astro-First Frontend Design
-Using `frontend-design`, the agent designs a responsive, modern website using **Astro**.
+Using `dineway-frontend-design`, the agent designs a responsive, modern website using **Astro**.
 - Premium typography and elegant color palettes.
 - Structured pages for **Home**, **About/Snapshot**, and **Location & Contact**.
 - Complete sections for the 5 required columns: **Blog**, **News**, **Menu**, **Reviews**, and **Gallery**.
@@ -143,9 +143,9 @@ You can deploy Dineway to any standard cloud host or your own server. Your SQLit
    Ensure Node.js 22+ is available. Ensure the CLI tools are ready.
    
 2. **Execute Enrichment:**
-   Run `enrich-place-details` script using the provided name and city:
+   Run `dineway-enrich-places` script using the provided name and city:
    ```bash
-   node node_modules/@dineway/enrich-place-details/scripts/enrich_place_details.js --name "RESTAURANT_NAME" --city "CITY_NAME"
+   node node_modules/@dineway/dineway-enrich-places/scripts/enrich_place_details.js --name "RESTAURANT_NAME" --city "CITY_NAME"
    ```
    Read the output JSON from `places/{placeId}.json`.
 
