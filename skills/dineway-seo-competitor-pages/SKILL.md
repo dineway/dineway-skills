@@ -29,7 +29,8 @@ Use this child skill for comparison and alternatives pages. It may be invoked di
 - Do not fabricate prices, ratings, awards, product capabilities, screenshots, or customer counts.
 - Do not make defamatory or unverifiable negative claims.
 - Disclose ownership, sponsorship, or affiliation where relevant.
-- Do not use local provider credentials, MCP provider tools, or local fetch/parse/render commands.
+- Do not use provider BYOK credentials or third-party provider MCP servers. Local bounded crawl,
+  Browser Use, and Dineway provider MCP/CLI evidence are allowed under the shared boundaries.
 
 ## Output
 

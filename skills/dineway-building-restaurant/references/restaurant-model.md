@@ -1,6 +1,6 @@
 # Restaurant Content and CMS Boundary Model
 
-Use this reference for restaurant-specific IA, required content columns, Astro-first page planning, and Dineway CMS boundaries after `enrich-place-details` saves `places/${placeId}.json`. For Dineway mechanics, load the separate local references: `configuration.md`, `schema-and-seed.md`, `querying-and-rendering.md`, and `site-features.md`.
+Use this reference for restaurant-specific IA, required content columns, Astro-first page planning, and Dineway CMS boundaries after `dineway-enrich-places` saves `places/${placeId}.json`. For Dineway mechanics, load the separate local references: `configuration.md`, `schema-and-seed.md`, `querying-and-rendering.md`, and `site-features.md`.
 
 Do not load the generic Dineway site-building skill, templates, or demos as reference material. Build from the enriched place JSON and the target project's actual files.
 
@@ -8,7 +8,7 @@ Do not load the generic Dineway site-building skill, templates, or demos as refe
 
 1. Plan IA and visual direction from the real place JSON.
 2. Download usable restaurant photos to local assets.
-3. Use `$frontend-design` to build the visible Astro pages/components freely from the real data and local assets.
+3. Use `$dineway-frontend-design` to build the visible Astro pages/components freely from the real data and local assets.
 4. After the design works, add the required Dineway CMS-managed columns.
 5. Seed Blog, News, Menu, Reviews, and Gallery from real reviews, posts, videos, menu signals, and downloaded images.
 

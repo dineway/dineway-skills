@@ -1,5 +1,5 @@
 ---
-name: building-restaurant-site
+name: dineway-building-restaurant
 description: "Build high-quality Astro-first restaurant websites from real enriched place data and the restaurant's official websiteUri when present, then integrate Dineway CMS for required restaurant columns: Blog, News, Menu, Reviews, and Gallery. Use when the user provides a restaurant name and city, optionally a placeId, and wants a polished Dineway/Astro restaurant site with local media, local SEO, JSON-LD, review-derived content, official-site facts, and production-grade UI. Requires restaurant name and city before execution."
 ---
 
@@ -23,9 +23,9 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
 ## Required Workflow
 
 1. **Load supporting guidance**
-   - Use `$enrich-place-details` for restaurant lookup and enrichment. Depend on that skill's public inputs and outputs, not on its internal files.
-   - Invoke `$brainstorming` before deciding information architecture, visual direction, and CMS boundaries. Use it to compare options, then automatically adopt the best recommendation; do not merely imitate its process or ask the user to choose.
-   - Use `$frontend-design` for the visible Astro site. If it is not already loaded, explicitly read the local `skills/frontend-design/SKILL.md` guidance before writing visible layout, components, or CSS.
+   - Use `$dineway-enrich-places` for restaurant lookup and enrichment. Depend on that skill's public inputs and outputs, not on its internal files.
+   - Invoke `$dineway-brainstorming` before deciding information architecture, visual direction, and CMS boundaries. Use it to compare options, then automatically adopt the best recommendation; do not merely imitate its process or ask the user to choose.
+   - Use `$dineway-frontend-design` for the visible Astro site. If it is not already loaded, explicitly read the local `skills/dineway-frontend-design/SKILL.md` guidance before writing visible layout, components, or CSS.
    - Do not read, inspect, copy, or adapt Dineway `templates/` or `demos/` as reference material unless the user explicitly asks for that exact source.
    - If the current workspace already contains demo/template-like restaurant files, treat them as replaceable target files, not as a reference design or content source.
 
@@ -36,9 +36,9 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
    - Keep them current throughout the run. Record data fields, missing fields, image decisions, IA decisions, implementation steps, validation results, and fallback choices.
 
 3. **Fetch enriched place details**
-   - Invoke `$enrich-place-details` with the restaurant name and city.
+   - Invoke `$dineway-enrich-places` with the restaurant name and city.
    - If the user provided `placeId`, pass it through as the optional authoritative place id.
-   - Use the `placeDetailsPath` returned by `$enrich-place-details` and inspect the saved `places/${placeId}.json`.
+   - Use the `placeDetailsPath` returned by `$dineway-enrich-places` and inspect the saved `places/${placeId}.json`.
    - Inspect reviews, `ugcPosts`, place posts, place videos, and photo/image lists before planning content.
    - Treat that JSON file as the primary structured source of truth. Do not invent website, opening hours, menu items, social links, FAQ, awards, or services that are absent from the enriched JSON or the official website extraction below.
 
@@ -57,15 +57,15 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
    - Optional helper:
 
    ```bash
-   node skills/building-restaurant-site/scripts/restaurant_site_data.js \
+   node skills/dineway-building-restaurant/scripts/restaurant_site_data.js \
      summarize places/PLACE_ID.json \
      --out .plan/restaurant/site-summary.json
    ```
 
-   - Invoke `$brainstorming` to compare 2-3 information architecture, visual direction, and CMS boundary options, then adopt the best option automatically. Do not ask the user to choose among design options.
+   - Invoke `$dineway-brainstorming` to compare 2-3 information architecture, visual direction, and CMS boundary options, then adopt the best option automatically. Do not ask the user to choose among design options.
    - Only stop for user input when execution is impossible, such as missing restaurant name/city or an unresolved place match.
-   - Hard gate: before writing any Astro or Dineway implementation files, `findings.md` must contain a `Design Comparison` section with 2-3 options, pros/cons, the selected recommendation, and how `$frontend-design` will express the chosen direction. If that section is missing, stop implementation and create it.
-   - Treat the chosen visual direction as the design brief for `$frontend-design`.
+   - Hard gate: before writing any Astro or Dineway implementation files, `findings.md` must contain a `Design Comparison` section with 2-3 options, pros/cons, the selected recommendation, and how `$dineway-frontend-design` will express the chosen direction. If that section is missing, stop implementation and create it.
+   - Treat the chosen visual direction as the design brief for `$dineway-frontend-design`.
    - The public site must include Blog, News, Menu, Reviews, and Gallery columns. Data density controls depth and layout, not whether these columns exist.
    - Extract content themes from real reviews, `ugcPosts`, place posts, place videos, categories, service flags, official website pages, and downloaded images. Record the extracted themes and source fields in `findings.md`.
    - Create a `Data Utilization Matrix` in `findings.md` before design. For every present enriched field family from [references/data-mapping.md](references/data-mapping.md), record how it will be used: public page copy, CMS content source, gallery/media source, local SEO/JSON-LD, CTA/action link, design direction, or internal guardrail. If a present field will not be used, record the reason.
@@ -88,7 +88,7 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
    - If no representative images can be downloaded, record the blocker and ask for restaurant photos before final delivery because Gallery is required. If CMS upload fails, keep the static Astro design and omit the CMS-managed image field until upload works.
 
 7. **Design and build the Astro-first site**
-   - Use `$frontend-design` to implement the visible restaurant site from the chosen design brief, enriched JSON, and downloaded local images.
+   - Use `$dineway-frontend-design` to implement the visible restaurant site from the chosen design brief, enriched JSON, and downloaded local images.
    - Build promotional pages and sections as Astro pages/components first: Home, About/Snapshot, Location/Contact, trust signals, CTAs, SEO metadata, and JSON-LD.
    - Production configuration must provide a public origin via `siteUrl` or `DINEWAY_SITE_URL` before final validation; do not rely on an internal localhost origin for JSON-LD, sitemap, robots, MCP discovery, or schema map URLs.
    - Register `seoGraphPlugin()` in `astro.config.mjs` and add a public `/schemamap.xml` Astro route that proxies `/_dineway/api/plugins/seo-graph/schema/map`.
@@ -171,22 +171,22 @@ If the restaurant name or city is missing, stop immediately. Do not fetch data, 
 
 ```bash
 # Summarize real place data and produce a planning input.
-node skills/building-restaurant-site/scripts/restaurant_site_data.js summarize places/PLACE_ID.json
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js summarize places/PLACE_ID.json
 
 # Download usable image URLs from the enriched JSON (ranked by quality).
-node skills/building-restaurant-site/scripts/restaurant_site_data.js download places/PLACE_ID.json \
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js download places/PLACE_ID.json \
   --out public/assets/restaurant-name \
   --max 20 \
   --manifest .plan/restaurant/downloaded-media.json
 
 # After inspecting downloaded images, select the best 8-10.
-node skills/building-restaurant-site/scripts/restaurant_site_data.js select \
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js select \
   .plan/restaurant/downloaded-media.json \
   --pick 1,3,5,6,8,10,12,15 \
   --out .plan/restaurant/selected-media.json
 
 # Upload selected files for required CMS-managed Gallery and any CMS entry that uses images.
-node skills/building-restaurant-site/scripts/restaurant_site_data.js upload \
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js upload \
   .plan/restaurant/selected-media.json \
   --url http://localhost:4321 \
   --out .plan/restaurant/uploaded-media.json
@@ -198,7 +198,7 @@ Use the helper when it saves time, but still inspect the JSON and make the final
 
 | File                                                                         | Use                                                            |
 | ---------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| [references/data-mapping.md](references/data-mapping.md)                     | Field mapping from `enrich-place-details` payloads             |
+| [references/data-mapping.md](references/data-mapping.md)                     | Field mapping from `dineway-enrich-places` payloads            |
 | [references/media-pipeline.md](references/media-pipeline.md)                 | Local photo download and Dineway upload workflow               |
 | [references/restaurant-model.md](references/restaurant-model.md)             | Required columns, Astro-first design, and CMS boundary rules   |
 | [references/configuration.md](references/configuration.md)                   | Local Dineway/Astro configuration and runtime setup            |

@@ -39,11 +39,11 @@ Download up to 20 image candidates, ranked by source priority and resolution sig
 After download, the script reads actual image dimensions (JPEG/PNG/WebP header parsing) and records them in the manifest alongside file size, priority score, and source path.
 
 ```bash
-node skills/building-restaurant-site/scripts/restaurant_site_data.js download \
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js download \
   places/PLACE_ID.json \
   --out public/assets/restaurant-slug \
   --max 20 \
-  --manifest .plan/building-restaurant-site/restaurant/downloaded-media.json
+  --manifest .plan/dineway-building-restaurant/restaurant/downloaded-media.json
 ```
 
 The manifest records downloaded files with their dimensions, priority, and resolution hints, plus skipped candidates.
@@ -60,10 +60,10 @@ After downloading, the agent inspects the actual image content by viewing the do
 Mark selected images using the `select` subcommand:
 
 ```bash
-node skills/building-restaurant-site/scripts/restaurant_site_data.js select \
-  .plan/building-restaurant-site/restaurant/downloaded-media.json \
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js select \
+  .plan/dineway-building-restaurant/restaurant/downloaded-media.json \
   --pick 1,3,5,6,8,10,12,15 \
-  --out .plan/building-restaurant-site/restaurant/selected-media.json
+  --out .plan/dineway-building-restaurant/restaurant/selected-media.json
 ```
 
 The `--pick` flag accepts comma-separated 1-based indices matching the `index` field in the manifest. The output manifest marks each item with `selected: true/false`.
@@ -79,10 +79,10 @@ bgproc start -n devserver -w -- pnpm dev
 Then upload. When the manifest contains `selected` flags, only selected items are uploaded:
 
 ```bash
-node skills/building-restaurant-site/scripts/restaurant_site_data.js upload \
-  .plan/building-restaurant-site/restaurant/selected-media.json \
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js upload \
+  .plan/dineway-building-restaurant/restaurant/selected-media.json \
   --url http://localhost:4321 \
-  --out .plan/building-restaurant-site/restaurant/uploaded-media.json
+  --out .plan/dineway-building-restaurant/restaurant/uploaded-media.json
 ```
 
 If no items have the `selected` flag (backwards compatible), all items are uploaded.

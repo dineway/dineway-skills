@@ -28,7 +28,8 @@ Use this child skill for topic clusters and content architecture. It may be invo
 
 - Do not create doorway pages or thin local pages.
 - Do not write local HTML maps or unrelated local artifacts.
-- Do not use local provider credentials, MCP provider tools, or local fetch/parse/render commands.
+- Do not ask for provider secret values or use third-party provider MCP servers. Local bounded crawl,
+  Browser Use, and Dineway Tools MCP/CLI evidence are allowed under the shared boundaries.
 - Skip terms when there is no distinct source-backed Dineway value.
 
 ## Output

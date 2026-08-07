@@ -1,6 +1,6 @@
 # Dineway Configuration
 
-Use this for the Dineway configuration mechanics needed by `building-restaurant-site`. Do not load or inspect Dineway demos or templates while applying it.
+Use this for the Dineway configuration mechanics needed by `dineway-building-restaurant`. Do not load or inspect Dineway demos or templates while applying it.
 
 ## astro.config.mjs
 

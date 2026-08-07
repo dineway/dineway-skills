@@ -1,13 +1,25 @@
 # DataForSEO Provider Workflow
 
-Use Forgeway-hosted DataForSEO through the Dineway CLI only:
+Use DataForSEO through Dineway Tools. Discover the endpoint from the requested capability instead of
+guessing a provider path.
 
-- `dineway seo dataforseo serp`
-- `dineway seo dataforseo maps`
-- `dineway seo dataforseo keywords`
-- `dineway seo dataforseo competitors`
-- `dineway seo dataforseo ai-scrape`
-- `dineway seo dataforseo ai-mentions`
+### CLI
+
+- `dineway tools discover -q "DataForSEO <SERP, maps, keywords, competitors, or AI visibility need>"`
+- `dineway tools inspect -p dataforseo -e <discovered-endpoint>`
+- `dineway tools run -p dataforseo -e <inspected-endpoint> ...`
+- For CLI BYOK, pass only the `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD` environment variable names.
+
+### Native MCP
+
+- `tools_discover`
+- `tools_inspect`
+- `tools_run`
+- `tools_get_run`
+- `tools_list_runs`
+
+Prefer CLI for agents, humans, scripts, and CI. Use built-in MCP only when CLI is unavailable. Both
+routes use the Forgeway Integration catalog and authoritative run lifecycle.
 
 ## When to Use
 
@@ -19,12 +31,15 @@ Use Forgeway-hosted DataForSEO through the Dineway CLI only:
 
 ## Rules
 
-- Use Forgeway `/api/dataforseo/*`; never ask for local DataForSEO credentials.
-- Use live endpoints for v1.
+- Inspect once before the first run in the task; never guess a DataForSEO endpoint or input shape.
+- Never ask for DataForSEO secret values. Use CLI environment references or encrypted site BYOK.
+- Require `tools:read` plus `tools:run`, or `admin`, and Author-or-higher for token-authenticated MCP calls.
 - Keep limits bounded.
 - Use the raw DataForSEO response fields returned by Forgeway.
 - Do not expose provider credentials.
 - Treat cost metadata as operational, not public copy.
+- Keep interpretation, recommendations, and generation in the calling Skill; the CLI/MCP bridge
+  returns evidence only.
 
 ## Interpretation
 

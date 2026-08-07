@@ -1,6 +1,6 @@
 ---
 name: dineway-seo
-description: Plan and execute Dineway SEO, local SEO, GEO, and answer-engine visibility workflows. Use when creating content briefs, topic clusters, competitor/comparison pages, schema JSON-LD, SEO image assets, or hosted Firecrawl/DataForSEO research for Dineway sites.
+description: Plan and execute Dineway SEO, local SEO, GEO, and answer-engine visibility workflows. Use when creating content briefs, topic clusters, competitor/comparison pages, schema JSON-LD, SEO image assets, or Firecrawl/DataForSEO research through Dineway Tools.
 ---
 
 # Dineway SEO
@@ -9,12 +9,18 @@ Dineway SEO is a skill-first workflow for search, local, and answer-engine optim
 
 ## Boundaries
 
-- Do not install or require Claude Code plugins, slash commands, subagents, MCP servers, local provider credentials, or local crawler/fetch/render commands.
-- Do not add admin UI, plugin/admin routes, public local crawler commands, or provider BYOK fallback.
-- Hosted live provider data must go through Forgeway `/api/firecrawl/*` or `/api/dataforseo/*` via `dineway seo firecrawl ...` or `dineway seo dataforseo ...`.
-- Use raw Firecrawl/DataForSEO payloads returned by Forgeway, but do not expose provider credentials or billing details.
+- Do not require third-party Agent plugins, slash commands, subagents, or provider MCP servers. Use
+  Dineway CLI/MCP and the current Agent's native capabilities. Never ask for secret values; Dineway
+  Tools may use explicit CLI environment references or encrypted site BYOK.
+- Crawl the first-party site locally and use Browser Use when rendering is required. Keep any
+  deterministic crawler control bounded and separate from Agent conclusions.
+- Route live provider data only through the Dineway Tools Discover → Inspect → Run flow. Prefer
+  `dineway tools ...`; use the generic `tools_*` MCP operations when CLI is unavailable. Require
+  `tools:read` and `tools:run` for token-authenticated MCP access.
+- Use raw Firecrawl/DataForSEO payloads returned by Forgeway, but do not expose provider credentials or billing secrets.
 - Image generation is a skill workflow. Use the current agent image capability only when the user explicitly asks for generated images; do not consume Forgeway AI quota for SEO images.
-- Apply work draft-first unless the user explicitly asks to publish and the existing Dineway write path supports it safely.
+- Apply generated work as a Draft. Publish or schedule only after exact-Draft editorial approval,
+  valid release authorization, and current policy/capacity checks.
 
 ## Child Skills
 
@@ -25,7 +31,7 @@ Use this root skill for broad, mixed, or ambiguous SEO/GEO work. When the task c
 - `dineway-seo-competitor-pages`: alternatives, comparison, roundup, and feature/price comparison pages.
 - `dineway-seo-schema`: schema/JSON-LD audits, recommendations, validation, and Dineway schema apply plans.
 - `dineway-seo-images`: SEO image planning, generation prompts, alt text, filenames, media apply plans.
-- `dineway-seo-providers`: hosted Firecrawl/DataForSEO research, provider choice, and evidence interpretation.
+- `dineway-seo-providers`: Firecrawl/DataForSEO research through Dineway Tools, provider choice, and evidence interpretation.
 
 Child skills must still use the shared Dineway apply loop and provider/security boundaries in `references/apply-loop.md`, `references/security-boundaries.md`, `references/provider-selection.md`, `references/firecrawl.md`, and `references/dataforseo.md` when relevant.
 
@@ -49,7 +55,10 @@ Child skills must still use the shared Dineway apply loop and provider/security 
    - site SEO settings, canonical/base URL, locale/hreflang, and JSON-LD contributors;
    - relevant media assets, alt text, captions, and public URLs;
    - site-context briefing, brand voice, policies, seasonal strategy, and human-in-the-loop notes.
-3. Decide whether live provider data is needed. Use DataForSEO for SERP, keyword, competitor, maps, and AI visibility data; use Firecrawl for page extraction, URL discovery, crawl jobs, and search+scrape.
+3. Decide whether local/Browse evidence is sufficient. Use Dineway Tools discovery before selecting
+   any endpoint. Use DataForSEO for managed SERP, keyword,
+   competitor, maps, and AI visibility datasets; use Firecrawl for infrastructure-scale page
+   extraction, URL discovery, crawl jobs, and search+scrape.
 4. Produce a finding set before changes:
    - source evidence and dates;
    - prioritized opportunities;

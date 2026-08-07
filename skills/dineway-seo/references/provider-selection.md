@@ -23,13 +23,13 @@ Use no provider when current Dineway state and user-supplied facts are enough.
 - Planning a topic cluster using keyword suggestions, SERP overlap, and target-page inspection.
 - Auditing a page where the ranking surface and actual page content both matter.
 
-## Do Not Use Hosted Providers For
+## Do Not Use Integration Providers For
 
 - Tasks that can be answered from existing Dineway content/settings.
 - Drafting public copy without a need for live search evidence.
 - Image generation.
 - Unbounded crawling or broad audits without a clear URL/query limit.
-- Any request from anonymous/shadow users or without formal Forgeway credentials.
+- Any request from anonymous/shadow users or without authorized hosted access or configured BYOK.
 
 ## Output
 
@@ -37,6 +37,6 @@ State:
 
 - provider chosen;
 - reason;
-- command/API family;
+- discovered provider/endpoint and inspected contract;
 - limit;
 - expected output.

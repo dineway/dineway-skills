@@ -188,7 +188,8 @@ Persistence and secrets:
 
 ### Content CRUD
 
-The CLI is designed for agents. Create and update auto-publish by default so agents get read-after-write consistency without managing drafts.
+The CLI is designed for agents. Create and update are Draft-only. `get` overlays the current Draft
+by default so read-after-write remains consistent without bypassing editorial review.
 
 ```bash
 # List content
@@ -201,25 +202,67 @@ npx dineway content get posts 01ABC123
 npx dineway content get posts 01ABC123 --raw        # skip PT->markdown conversion
 npx dineway content get posts 01ABC123 --published   # ignore pending drafts
 
-# Create content (auto-publishes by default)
+# Create content as a Draft
 npx dineway content create posts --data '{"title": "Hello", "content": "# World"}'
 npx dineway content create posts --file post.json --slug hello-world
-npx dineway content create posts --draft --data '...'  # keep as draft
+npx dineway content create posts --draft --data '...'  # explicit Draft signal
 cat post.json | npx dineway content create posts --stdin
 
-# Update (requires --rev from a prior get, auto-publishes by default)
+# Update the Draft (requires --rev from a prior get)
 npx dineway content update posts 01ABC123 --rev MToyMDI2... --data '{"title": "Updated"}'
-npx dineway content update posts 01ABC123 --rev MToyMDI2... --draft --data '...'  # keep as draft
+npx dineway content update posts 01ABC123 --rev MToyMDI2... --draft --data '...'
 
 # Delete (soft delete)
 npx dineway content delete posts 01ABC123
 
 # Lifecycle
-npx dineway content publish posts 01ABC123
+npx dineway content publish posts 01ABC123 \
+  --review-request 01REVIEW \
+  --release-authorization 01RELEASE
 npx dineway content unpublish posts 01ABC123
-npx dineway content schedule posts 01ABC123 --at 2026-03-01T09:00:00Z
+npx dineway content schedule posts 01ABC123 \
+  --at 2026-03-01T09:00:00Z \
+  --review-request 01REVIEW \
+  --release-authorization 01RELEASE
 npx dineway content restore posts 01ABC123
+
+# Deterministic Content Optimization plugin inspection
+npx dineway optimization opportunities list --status accepted --locale en-SG
+npx dineway optimization opportunities get 01OPPORTUNITY
+npx dineway optimization calendar view --timezone Asia/Singapore --days 4
+npx dineway optimization calendar policy
+npx dineway optimization calendar wake --timezone Asia/Singapore
+npx dineway optimization calendar targets \
+  --expected-version 1 \
+  --idempotency-key calendar-targets-v1 \
+  --data '{"draft":{"site":20,"collection":4,"byline":4,"locale":4},"publish":{"site":10,"collection":2,"byline":2,"locale":2}}'
 ```
+
+The installed Content Optimization plugin contributes the top-level `optimization` command to the
+existing Dineway CLI. Its commands only inspect or update deterministic plugin state. Research,
+priority-factor judgment, writing, and optimization remain Agent Skills.
+
+### Local SEO Evidence
+
+```bash
+npx dineway seo crawl local https://example.com --limit 100 --max-depth 3 --json
+npx dineway seo crawl local https://example.com \
+	--include "/,/blog/**" \
+	--exclude "/private/**" \
+	--sitemap include \
+	--json
+npx dineway seo crawl local http://127.0.0.1:4321 \
+	--allow-private-network \
+	--json
+```
+
+The local crawler reads `robots.txt`, combines same-origin discovery with bounded sitemaps, and
+returns page metadata, headings, bounded text excerpts, internal/external links, orphan evidence,
+duplicate groups, broken pages, and explicit source failures. It does not render JavaScript or
+generate conclusions; use Browser Use only for pages marked as needing rendering. It blocks
+localhost, private-network targets, and hostnames resolving to private addresses by default. Use
+`--allow-private-network` only when the operator explicitly selects a trusted local development
+origin.
 
 ### Schema Management
 
@@ -286,15 +329,14 @@ npx dineway menu get primary
 
 ## Drafts and Publishing
 
-The CLI auto-publishes on `create` and `update` by default. This means:
+- **`create`** creates a native Draft.
+- **`update`** writes a new Draft Revision and requires the current `_rev` token.
+- **`get`** returns Draft data when a pending Draft exists; use `--published` for Live only.
+- **`publish`** and **`schedule`** require an approved Review Request for the exact Draft plus a
+  release authorization for the requested action/time.
 
-- **`create`** creates the item and immediately publishes it
-- **`update`** updates the item and publishes if a draft revision was created
-- **`get`** returns draft data if a pending draft exists (e.g. from the admin UI)
-
-Use `--draft` on create/update to skip auto-publishing. Use `--published` on get to ignore pending drafts.
-
-Collections that support revisions store edits as draft revisions. The CLI handles this transparently — agents don't need to know whether a collection uses revisions or not.
+`--draft` remains an explicit compatibility signal on create/update, but Draft is the only
+supported write mode. Never reuse review or release identifiers after the Draft or schedule changes.
 
 ## JSON Output
 

@@ -78,21 +78,27 @@ npx dineway content create posts --data '{"title": "Hello", "content": "# Welcom
 npx dineway content create posts --data '{"title": "Hello", "content": [{"_type": "block", "children": [{"_type": "span", "text": "Welcome"}]}]}'
 ```
 
-## Auto-Publishing
+## Draft and Release Boundary
 
-The CLI is designed for agents. It auto-publishes on `create` and `update` by default so agents get read-after-write consistency without managing the draft/publish lifecycle.
+The CLI is designed for agents. `create` and `update` always write Draft state, while `get` overlays
+the current Draft by default so read-after-write remains consistent.
 
 ### How It Works
 
-- **`create`** — creates the item, then publishes it. The returned item is in `published` status.
-- **`update`** — updates the item. If the collection uses revisions and the update created a draft revision, it auto-publishes to promote the draft to the content table. The returned item reflects the updated data.
-- **`get`** — returns the latest state. If a pending draft exists (e.g. someone edited in the admin UI but didn't publish), the draft data is returned instead of the published data. Use `--published` to see only published data.
+- **`create`** — creates a native Draft.
+- **`update`** — writes a Draft Revision after validating the current `_rev` token.
+- **`get`** — returns Draft data when one exists. Use `--published` to read Live only.
+- **`publish` / `schedule`** — require an approved exact-Draft Review Request and a release
+  authorization bound to the action and, for Schedule, the requested time.
 
-Use `--draft` on create/update to skip auto-publishing.
+`--draft` remains an explicit compatibility signal on create/update, but it does not change the
+Draft-only behavior.
 
-### Why Auto-Publish?
+### Why Draft-Only?
 
-Dineway collections can support draft revisions. When they do, `update` writes data to a draft revision instead of the content table. Without auto-publish, an agent would update, then `get` the item, and see stale published data — not the changes it just made. Auto-publish eliminates this confusion.
+Draft-only writes preserve Dineway Preview, Diff, exact-revision editorial review, and release
+policy. Read-after-write does not require publication because the normal `get` command already
+overlays the pending Draft.
 
 ## Read-Before-Write
 
@@ -128,7 +134,7 @@ The CLI **requires** `--rev` on updates. The typical workflow:
 npx dineway content get posts 01ABC123
 # Output includes: _rev: MToyMDI2LTAyLTE0...
 
-# 2. Update with the _rev you received — auto-publishes by default
+# 2. Update the Draft with the _rev you received
 npx dineway content update posts 01ABC123 \
   --rev MToyMDI2LTAyLTE0... \
   --data '{"title": "New Title"}'
@@ -158,7 +164,7 @@ Only `update`. All other operations are either idempotent or non-destructive:
 | `content create`    | No              | Nothing exists yet       |
 | `content update`    | **Yes**         | Overwrites existing data |
 | `content delete`    | No              | Soft delete, reversible  |
-| `content publish`   | No              | Idempotent status change |
+| `content publish`   | No              | Requires review and release authorization |
 | `content unpublish` | No              | Idempotent status change |
-| `content schedule`  | No              | Only changes metadata    |
+| `content schedule`  | No              | Requires review and release authorization |
 | `content restore`   | No              | Restores from trash      |

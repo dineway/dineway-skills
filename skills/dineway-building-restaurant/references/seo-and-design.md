@@ -41,7 +41,7 @@ Use enriched local signals outside JSON-LD as well:
 
 ## Information Architecture
 
-Compare 2-3 options by invoking `$brainstorming` before implementation:
+Compare 2-3 options by invoking `$dineway-brainstorming` before implementation:
 
 - Compact homepage plus required Blog, News, Menu, Reviews, and Gallery columns for sparse details.
 - Separate Reviews, Menu, Blog, and News pages when source material deserves clearer scan paths.
@@ -49,11 +49,11 @@ Compare 2-3 options by invoking `$brainstorming` before implementation:
 
 Choose automatically and record the reasoning. Do not ask the user to choose among design options. Stop for user input only when execution is impossible, such as missing restaurant name/city or an unresolved place match.
 
-Build the visible experience Astro-first with `$frontend-design`. Keep promotional pages and sections as Astro code unless they need ongoing editorial management. Add Dineway CMS for required Blog, News, Menu, Reviews, and Gallery columns.
+Build the visible experience Astro-first with `$dineway-frontend-design`. Keep promotional pages and sections as Astro code unless they need ongoing editorial management. Add Dineway CMS for required Blog, News, Menu, Reviews, and Gallery columns.
 
 Blog must reinterpret review themes, `ugcPosts`, place posts, and videos from the restaurant's point of view. News must use menu-update signals, `ugcPosts`, and place posts. Menu must use real menu/menu-update data and review-backed food or experience themes. Reviews must use selected real reviews to create authenticity. Gallery must elevate the design with representative downloaded images, including usable `ugcPosts` media when present.
 
-Implementation may not start until `.plan/<restaurant-slug>/findings.md` has a `Design Comparison` section with 2-3 options, pros/cons, selected recommendation, and frontend-design execution notes.
+Implementation may not start until `.plan/<restaurant-slug>/findings.md` has a `Design Comparison` section with 2-3 options, pros/cons, selected recommendation, and dineway-frontend-design execution notes.
 
 ## Visual Direction
 

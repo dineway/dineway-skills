@@ -1,5 +1,5 @@
 ---
-name: building-dineway-site
+name: dineway-building-site
 description: Build and customize Dineway Agentic Web sites. Use when creating pages, defining collections, writing seed files, querying content, rendering Portable Text, setting up menus/taxonomies/widgets, configuring deployment, or any task involving a Dineway-powered Astro site. Assumes basic Astro knowledge but provides all Dineway-specific patterns.
 ---
 
@@ -156,7 +156,7 @@ dineway({
 }),
 ```
 
-**To build a plugin, load the `creating-plugins` skill** (in `.agents/skills/creating-plugins/`). It covers plugin anatomy, hooks, storage, admin UI, API routes, Portable Text blocks, capabilities, and the full `definePlugin()` API.
+**To build a plugin, load the `dineway-creating-plugins` skill** (in `.agents/skills/dineway-creating-plugins/`). It covers plugin anatomy, hooks, storage, admin UI, API routes, Portable Text blocks, capabilities, and the full `definePlugin()` API.
 
 ## Reference Documents
 

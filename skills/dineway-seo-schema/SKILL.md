@@ -28,7 +28,8 @@ Use this child skill for schema and JSON-LD work. It may be invoked directly, bu
 - Do not create schema solely to chase removed or restricted rich results.
 - Do not invent ratings, reviews, opening hours, coordinates, prices, availability, images, or organization details.
 - Do not inject time-sensitive schema only through delayed client JavaScript.
-- Do not use local provider credentials, MCP provider tools, or local fetch/parse/render commands.
+- Do not use provider BYOK credentials or third-party provider MCP servers. Local bounded crawl,
+  Browser Use, and Dineway provider MCP/CLI evidence are allowed under the shared boundaries.
 
 ## Output
 

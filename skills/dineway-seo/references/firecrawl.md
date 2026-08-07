@@ -1,11 +1,25 @@
 # Firecrawl Provider Workflow
 
-Use Forgeway-hosted Firecrawl through the Dineway CLI only:
+Use Firecrawl through Dineway Tools. Discover the endpoint from the requested capability instead of
+guessing a provider path.
 
-- `dineway seo firecrawl scrape`
-- `dineway seo firecrawl map`
-- `dineway seo firecrawl crawl`
-- `dineway seo firecrawl search`
+### CLI
+
+- `dineway tools discover -q "Firecrawl <scrape, map, crawl, or search need>"`
+- `dineway tools inspect -p firecrawl -e <discovered-endpoint>`
+- `dineway tools run -p firecrawl -e <inspected-endpoint> ...`
+- `dineway tools runs get -r <run-id> --wait` for an asynchronous crawl
+
+### Native MCP
+
+- `tools_discover`
+- `tools_inspect`
+- `tools_run`
+- `tools_get_run`
+- `tools_stop_run` when the inspected asynchronous endpoint is cancellable
+
+Prefer CLI for agents, humans, scripts, and CI. Use built-in MCP only when CLI is unavailable. Both
+routes use the Forgeway Integration catalog and authoritative run lifecycle.
 
 ## When to Use
 
@@ -16,11 +30,15 @@ Use Forgeway-hosted Firecrawl through the Dineway CLI only:
 
 ## Rules
 
-- Use Forgeway `/api/firecrawl/*`; never ask for or store a local Firecrawl API key.
+- Inspect once before the first run in the task; never guess a Firecrawl endpoint or input shape.
+- Never ask for or store a Firecrawl secret value. Use CLI environment references or encrypted site BYOK.
+- Require `tools:read` plus `tools:run`, or `admin`, and Author-or-higher for token-authenticated MCP calls.
 - Keep limits small and intentional.
 - Use the raw Firecrawl response fields returned by Forgeway.
 - Do not expose provider credentials.
-- Do not use Firecrawl parse/interact/monitor/account APIs in v1.
+- Use only endpoints returned by Forgeway discovery and inspection.
+- Keep interpretation, recommendations, and generation in the calling Skill; the CLI/MCP bridge
+  returns evidence only.
 
 ## Output Use
 
@@ -32,7 +50,7 @@ Use Forgeway-hosted Firecrawl through the Dineway CLI only:
 
 Record:
 
-- command used;
+- provider/endpoint, inspected contract, and command used;
 - URL/query;
 - provider status or job identifiers when useful;
 - relevant pages/results;

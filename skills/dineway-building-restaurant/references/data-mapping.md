@@ -1,6 +1,6 @@
 # Enriched Place Data Mapping
 
-The source of truth is the JSON saved by `enrich-place-details`, normally `places/${placeId}.json`. Prefer `placeDetails`, then fall back to `selectedPlace`, then search/candidate summaries. Do not use legacy payload field names unless handling a compatibility fixture.
+The source of truth is the JSON saved by `dineway-enrich-places`, normally `places/${placeId}.json`. Prefer `placeDetails`, then fall back to `selectedPlace`, then search/candidate summaries. Do not use legacy payload field names unless handling a compatibility fixture.
 
 ## Required Identity Fields
 
@@ -102,9 +102,9 @@ Do not force every field into visible copy. "Use" includes SEO, internal guardra
 ## Optional Summary Command
 
 ```bash
-node skills/building-restaurant-site/scripts/restaurant_site_data.js \
+node skills/dineway-building-restaurant/scripts/restaurant_site_data.js \
   summarize places/PLACE_ID.json \
-  --out .plan/building-restaurant-site/restaurant/site-summary.json
+  --out .plan/dineway-building-restaurant/restaurant/site-summary.json
 ```
 
 The summary is a planning aid. Inspect the original JSON before final decisions.
