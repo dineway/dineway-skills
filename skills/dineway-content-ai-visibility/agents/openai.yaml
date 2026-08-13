@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content AI Visibility"
+  short_description: "Observe citations in user-owned AI clients"
+  default_prompt: "Use $dineway-content-ai-visibility to collect current, source-attributed AI answer visibility for this Dineway site."

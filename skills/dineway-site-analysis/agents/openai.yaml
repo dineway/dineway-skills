@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Site Analysis"
+  short_description: "Learn site, brand, bylines, and content gaps"
+  default_prompt: "Use $dineway-site-analysis to learn this Dineway site before planning content."

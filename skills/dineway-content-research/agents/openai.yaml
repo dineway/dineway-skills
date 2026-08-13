@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content Research"
+  short_description: "Gather evidence for Dineway content work"
+  default_prompt: "Use $dineway-content-research to build an evidence pack for this Dineway opportunity."

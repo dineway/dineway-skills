@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content Competition"
+  short_description: "Analyze competitor evidence and content gaps"
+  default_prompt: "Use $dineway-content-competition to collect current competitor evidence and diagnose differentiated Dineway content opportunities."

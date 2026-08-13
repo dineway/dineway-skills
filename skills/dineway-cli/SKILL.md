@@ -226,21 +226,25 @@ npx dineway content schedule posts 01ABC123 \
   --release-authorization 01RELEASE
 npx dineway content restore posts 01ABC123
 
-# Deterministic Content Optimization plugin inspection
-npx dineway optimization opportunities list --status accepted --locale en-SG
-npx dineway optimization opportunities get 01OPPORTUNITY
-npx dineway optimization calendar view --timezone Asia/Singapore --days 4
-npx dineway optimization calendar policy
-npx dineway optimization calendar wake --timezone Asia/Singapore
-npx dineway optimization calendar targets \
-  --expected-version 1 \
-  --idempotency-key calendar-targets-v1 \
-  --data '{"draft":{"site":20,"collection":4,"byline":4,"locale":4},"publish":{"site":10,"collection":2,"byline":2,"locale":2}}'
+# Deterministic Content Pipeline control
+npx dineway pipeline runs list --status active --json
+npx dineway pipeline status 01RUN --json
+npx dineway pipeline jobs list --run-id 01RUN --json
+npx dineway pipeline jobs attempts list --job-id 01JOB --json
+npx dineway pipeline results list --job-id 01JOB --json
+npx dineway pipeline assignments list --job-id 01JOB --json
+npx dineway pipeline handoffs list --job-id 01JOB --json
+npx dineway pipeline calendar view --timezone Asia/Singapore --days 4 --json
+npx dineway pipeline calendar wake --timezone Asia/Singapore --json
+npx dineway pipeline policies calendar get --json
+npx dineway pipeline policies quality get --json
 ```
 
-The installed Content Optimization plugin contributes the top-level `optimization` command to the
-existing Dineway CLI. Its commands only inspect or update deterministic plugin state. Research,
-priority-factor judgment, writing, and optimization remain Agent Skills.
+The installed Content Pipeline plugin contributes the top-level `pipeline` command to the existing
+Dineway CLI. It deterministically manages Runs, Jobs, status, Results, calendar, policies,
+Assignments, and Handoffs. Payload-based mutations accept `--data`, `--file`, or `--stdin` JSON.
+Research, Brief, writing, optimization, competition, AI Visibility, atomization, and site analysis
+remain Agent Skills and are intentionally not CLI execution commands.
 
 ### Local SEO Evidence
 

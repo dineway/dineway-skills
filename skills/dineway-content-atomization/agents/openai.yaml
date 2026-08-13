@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content Atomization"
+  short_description: "Repurpose one Dineway revision into channel assets"
+  default_prompt: "Use $dineway-content-atomization to create reviewable channel assets from this exact Dineway content revision."

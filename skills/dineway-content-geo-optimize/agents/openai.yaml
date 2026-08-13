@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content GEO Optimize"
+  short_description: "Deep-check a Dineway Draft for AI citation"
+  default_prompt: "Use $dineway-content-geo-optimize to inspect this exact Dineway Draft Revision for deep GEO and AEO readiness."

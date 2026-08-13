@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content Pipeline"
+  short_description: "Run the complete local Dineway content loop"
+  default_prompt: "Use $dineway-content-pipeline to resume and execute the highest-priority Dineway content work."

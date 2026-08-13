@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content Optimize"
+  short_description: "Optimize Dineway drafts for review and release"
+  default_prompt: "Use $dineway-content-optimize to validate and improve this Dineway draft before review."

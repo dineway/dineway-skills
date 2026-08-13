@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content Monitor"
+  short_description: "Observe rankings, citations, traffic, and decay"
+  default_prompt: "Use $dineway-content-monitor to collect and interpret current visibility evidence for this Dineway content."

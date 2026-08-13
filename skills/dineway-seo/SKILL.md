@@ -26,7 +26,7 @@ Dineway SEO is a skill-first workflow for search, local, and answer-engine optim
 
 Use this root skill for broad, mixed, or ambiguous SEO/GEO work. When the task clearly matches one workflow, use the matching child skill directly:
 
-- `dineway-seo-content-brief`: content briefs, outlines, page refresh plans, metadata recommendations.
+- `dineway-content-brief`: content briefs, outlines, page refresh plans, metadata recommendations.
 - `dineway-seo-cluster`: topic clusters, hub/spoke plans, internal link matrices.
 - `dineway-seo-competitor-pages`: alternatives, comparison, roundup, and feature/price comparison pages.
 - `dineway-seo-schema`: schema/JSON-LD audits, recommendations, validation, and Dineway schema apply plans.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Content Writer"
+  short_description: "Draft schema-valid content in each byline voice"
+  default_prompt: "Use $dineway-content-writer to draft this brief in the selected Dineway byline voice."
