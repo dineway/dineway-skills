@@ -9,10 +9,10 @@ description: "You MUST use this before any creative work - creating features, bu
 
 Help turn ideas into fully formed designs and specs through natural collaborative dialogue.
 
-Start by understanding the current project context, then ask questions one at a time to refine the idea. Before asking each question, check whether you can safely answer it with the recommended assumption and continue without interrupting the user. Once you understand what you're building, present the design and get user approval, applying the same check before every approval request.
+Start by understanding the current project context, then ask questions one at a time to refine the idea. Before asking each question, check whether you can safely answer it with the recommended assumption and continue without interrupting the user. Once you understand what you're building, present the design and get user approval, applying the same check before every approval request. After clearing the design gate, automatically invoke the appropriate follow-up skill when the original request includes downstream work.
 
 <HARD-GATE>
-Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and cleared its approval gate. Before asking for approval, check whether you can safely choose the recommended decision for the user. If so, record that decision and continue without asking; otherwise, obtain the user's approval. This applies to EVERY project regardless of perceived simplicity.
+Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and cleared its approval gate. Before asking for approval, check whether you can safely choose the recommended decision for the user. If so, record that decision and continue without asking; otherwise, obtain the user's approval. Once the gate is cleared, automatically invoke the appropriate follow-up skill and continue when downstream work remains; do not request confirmation merely to cross the skill boundary. This applies to EVERY project regardless of perceived simplicity.
 </HARD-GATE>
 
 ## Anti-Pattern: "This Is Too Simple To Need A Design"
@@ -27,6 +27,7 @@ You MUST create a task for each of these items and complete them in order:
 2. **Ask clarifying questions** — one at a time; before each question, check whether the recommended assumption lets you proceed without asking
 3. **Propose 2-3 approaches** — with trade-offs and your recommendation
 4. **Present design** — in sections scaled to their complexity; after each section, run the recommendation-first check before requesting approval
+5. **Continue downstream work** — when the original request includes more work, invoke the appropriate follow-up skill automatically
 
 ## Process Flow
 
@@ -39,7 +40,10 @@ digraph dineway_brainstorming {
     "Present design sections" [shape=box];
     "Approval genuinely needs user?" [shape=diamond];
     "User approves design?" [shape=diamond];
-    "Brainstorming complete" [shape=doublecircle];
+    "Brainstorming complete" [shape=box];
+    "Downstream work remains?" [shape=diamond];
+    "Invoke follow-up skill and continue" [shape=doublecircle];
+    "Return design and stop" [shape=doublecircle];
 
     "Explore project context" -> "Question genuinely needs user?";
     "Question genuinely needs user?" -> "Propose 2-3 approaches" [label="no, use recommendation"];
@@ -51,10 +55,13 @@ digraph dineway_brainstorming {
     "Approval genuinely needs user?" -> "User approves design?" [label="yes"];
     "User approves design?" -> "Present design sections" [label="no, revise"];
     "User approves design?" -> "Brainstorming complete" [label="yes"];
+    "Brainstorming complete" -> "Downstream work remains?";
+    "Downstream work remains?" -> "Invoke follow-up skill and continue" [label="yes"];
+    "Downstream work remains?" -> "Return design and stop" [label="no"];
 }
 ```
 
-**The terminal state is an approved or safely self-cleared design.** Return the design and stop. Do NOT automatically write a design document, invoke a planning skill, or begin implementation.
+**A cleared design is the terminal state of brainstorming, not necessarily of the user's request.** If downstream work remains, pass the design forward, invoke the most appropriate follow-up skill automatically, and continue. Stop only when the user requested design alone, no downstream work remains, or a decision genuinely requires the user. Do NOT automatically write a design document or invoke a planning skill unless the request requires one.
 
 ## The Process
 
@@ -82,6 +89,12 @@ digraph dineway_brainstorming {
 - Cover: architecture, components, data flow, error handling, testing
 - Be ready to go back and clarify if something doesn't make sense
 
+**Continuing after the design:**
+
+- Re-read the original request after clearing the design gate
+- If implementation or another downstream task remains, invoke the most appropriate applicable follow-up skill and continue automatically
+- Do not ask for confirmation solely because brainstorming has ended
+
 ## Key Principles
 
 - **Recommendation-first checkpoint** - Before every question or approval request, decide whether the recommended option is safe to choose for the user
@@ -91,4 +104,5 @@ digraph dineway_brainstorming {
 - **YAGNI ruthlessly** - Remove unnecessary features from all designs
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present the design section by section and clear each approval gate through either the safe recommendation or explicit user approval
+- **Automatic handoff** - Treat the design gate as a phase boundary and invoke the appropriate follow-up skill when downstream work remains
 - **Be flexible** - Go back and clarify when something doesn't make sense
