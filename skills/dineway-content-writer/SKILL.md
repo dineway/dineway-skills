@@ -39,9 +39,12 @@ second authoritative article body.
 8. After structural validation, call `dineway content create --draft` for new content or `dineway
 content update --draft --rev <current-revision>` for an update/Fix. Save the unchanged CMS
    response in `.dineway/content/runs/<run-id>/jobs/<job-id>/cms/draft-receipt.json`.
-9. Refresh the CMS item and record a `draft` Result containing only `collection`, `contentId`, exact
-   `draftRevisionId`, revision token, and current `schemaFingerprint`. Bind the same identity at
-   Result level with provenance and accepted input Result versions.
+9. Refresh the CMS item and return the unchanged Draft receipt plus a typed identity payload with
+   only `collection`, `contentId`, exact `draftRevisionId`, revision token, and current
+   `schemaFingerprint`, together with provenance.
+10. Return control to the master Pipeline. It calls `content_pipeline_stage_complete`, which derives
+    the artifact receipt, binds accepted upstream versions, finishes the Attempt/Assignment, and
+    creates the immutable Draft Result atomically.
 
 ## Completion gate
 
@@ -49,4 +52,5 @@ content update --draft --rev <current-revision>` for an update/Fix. Save the unc
 - Every factual claim maps to Research/Site Context evidence.
 - Locale, byline, translation family, and existing content identity are preserved.
 - No provider notes, prompts, internal rule text, or provenance instructions appear in public copy.
-- The exact native Draft Result is ready for `dineway-content-optimize`, not for publication.
+- Native status returns `begin_optimization`; the exact Draft is not ready for publication.
+- Do not call granular Result mutation operations from this Skill.

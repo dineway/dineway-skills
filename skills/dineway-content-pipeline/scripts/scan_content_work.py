@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 
-CONTRACT_VERSION = 4
+CONTRACT_VERSION = 5
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 STAGE_ARTIFACTS = {
     "research": ("research/evidence.json", "research/findings.md"),
@@ -26,14 +26,6 @@ STAGE_ARTIFACTS = {
     "monitor": ("monitor/evidence.json",),
     "fix": ("cms/draft-receipt.json",),
 }
-NEXT_STAGE = {
-    "research": "brief",
-    "brief": "writer",
-    "writer": "optimization",
-    "optimization": "geo_optimization",
-}
-
-
 def read_json(path: Path, errors: list[str]) -> Any:
     if not path.is_file():
         return None
@@ -84,12 +76,22 @@ def exact_draft_matches(result: Any, content: Any) -> bool:
 def scan(run_dir: Path) -> dict[str, Any]:
     errors: list[str] = []
     native = read_json(run_dir / "native-state.json", errors)
-    native_run = native.get("run") if isinstance(native, dict) else None
-    native_jobs = native.get("jobs") if isinstance(native, dict) else None
+    native_status = native.get("status") if isinstance(native, dict) else None
+    if not isinstance(native_status, dict):
+        native_status = native if isinstance(native, dict) else None
+    native_run = native_status.get("run") if isinstance(native_status, dict) else None
+    native_jobs = native_status.get("jobs") if isinstance(native_status, dict) else None
+    native_current_stage = (
+        native_status.get("currentStage") if isinstance(native_status, dict) else None
+    )
+    native_next_action = (
+        native_status.get("nextAction") if isinstance(native_status, dict) else None
+    )
+    native_timing = native_status.get("timing") if isinstance(native_status, dict) else None
     content = native.get("content") if isinstance(native, dict) else None
     calendar = native.get("calendar") if isinstance(native, dict) else None
     review = native.get("review") if isinstance(native, dict) else None
-    release = native.get("release") if isinstance(native, dict) else None
+    release_readiness = native.get("releaseReadiness") if isinstance(native, dict) else None
 
     if not isinstance(native_run, dict) or native_run.get("id") != run_dir.name:
         errors.append("Native Pipeline Run identity does not match the local run directory.")
@@ -132,14 +134,14 @@ def scan(run_dir: Path) -> dict[str, Any]:
                 pending_handoff.get("jobId") != job_id
                 or pending_handoff.get("fromAssignmentId") != assignment_id
             ):
-                recovery_action = (stage_name, "refresh-native-handoff", job_id)
+                recovery_action = (stage_name, "refresh_native_handoff", job_id)
                 errors.append(f"Job {job_id} Handoff does not match its active Assignment.")
             elif recovery_action is None:
-                recovery_action = (stage_name, "accept-or-reject-handoff", job_id)
+                recovery_action = (stage_name, "accept_or_reject_handoff", job_id)
         elif isinstance(active_assignment, dict) and active_assignment.get("status") == "expired":
-            recovery_action = recovery_action or (stage_name, "reacquire-assignment", job_id)
+            recovery_action = recovery_action or (stage_name, "reacquire_assignment", job_id)
         elif job.get("status") == "failed":
-            recovery_action = recovery_action or (stage_name, "retry-job", job_id)
+            recovery_action = recovery_action or (stage_name, "retry_stage", job_id)
 
         job_views.append(
             {
@@ -163,43 +165,26 @@ def scan(run_dir: Path) -> dict[str, Any]:
             }
         )
 
-    current_stage = "pipeline"
-    next_action = "create-research-job"
+    current_stage = native_current_stage if isinstance(native_current_stage, str) else "research"
+    next_action = native_next_action if isinstance(native_next_action, str) else "begin_research"
     current_job_id: str | None = None
+    if not isinstance(native_current_stage, str) or not isinstance(native_next_action, str):
+        errors.append("Native Pipeline status is missing currentStage or nextAction.")
     overdue = isinstance(calendar, dict) and calendar.get("assignmentStatus") == "overdue"
     if recovery_action is not None:
         current_stage, next_action, current_job_id = recovery_action
     elif overdue:
-        current_stage, next_action = "calendar", "reevaluate-overdue"
+        current_stage, next_action = "calendar", "reevaluate_overdue"
     elif job_views:
         current = job_views[-1]
-        current_stage = current["stage"]
         current_job_id = current["jobId"]
         if current["acceptedResultId"]:
             if not current["resultReceiptCurrent"]:
-                next_action = "refresh-result-receipt"
+                next_action = "refresh_result_receipt"
             elif not current["artifactsComplete"]:
-                next_action = "refresh-derived-artifacts"
+                next_action = "refresh_derived_artifacts"
             elif not current["draftRevisionCurrent"]:
-                next_action = "refresh-current-draft-and-retry"
-            elif current["stage"] in NEXT_STAGE:
-                next_action = f"create-{NEXT_STAGE[current['stage']]}-job"
-            elif current["stage"] == "geo_optimization":
-                next_action = "record-quality-attestation"
-            else:
-                next_action = "return-to-pipeline"
-        elif current["candidateResultId"]:
-            next_action = (
-                "await-human-brief-approval"
-                if current["stage"] == "brief"
-                else "accept-validated-result"
-            )
-        elif current["status"] in {"running", "blocked"}:
-            next_action = "resume-stage-attempt"
-        elif not current["assignmentId"]:
-            next_action = "claim-stage-assignment"
-        else:
-            next_action = "start-stage-attempt"
+                next_action = "refresh_current_draft_and_retry"
 
     draft_revision_id = content.get("draftRevisionId") if isinstance(content, dict) else None
     review_current = (
@@ -207,11 +192,7 @@ def scan(run_dir: Path) -> dict[str, Any]:
         and review.get("status") == "approved"
         and review.get("draftRevisionId") == draft_revision_id
     )
-    release_current = (
-        isinstance(release, dict)
-        and release.get("status") == "active"
-        and release.get("draftRevisionId") == draft_revision_id
-    )
+    release_current = isinstance(release_readiness, dict) and release_readiness.get("ready") is True
 
     return {
         "contractVersion": CONTRACT_VERSION,
@@ -221,6 +202,7 @@ def scan(run_dir: Path) -> dict[str, Any]:
         "currentStage": current_stage,
         "currentJobId": current_job_id,
         "nextAction": next_action,
+        "timing": native_timing if isinstance(native_timing, dict) else None,
         "cms": {
             "collection": content.get("collection") if isinstance(content, dict) else None,
             "contentId": content.get("id") if isinstance(content, dict) else None,

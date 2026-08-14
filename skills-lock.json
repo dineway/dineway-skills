@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "dineway-brainstorming": {
+      "source": "dineway/dineway-skills",
+      "sourceType": "github",
+      "skillPath": "skills/dineway-brainstorming/SKILL.md",
+      "computedHash": "6e6df89a4f4b8cac49622e855c78e3f4dc09035ef1ec867f584619b732c7c0af"
+    }
+  }
+}

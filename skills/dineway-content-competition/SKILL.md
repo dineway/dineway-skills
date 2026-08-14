@@ -6,8 +6,8 @@ description: Collect and analyze current competitors for Dineway content. Use fo
 # Dineway Content Competition
 
 Treat crawl and SERP retrieval as evidence acquisition; perform gap diagnosis, clustering,
-prioritization, and recommendations locally in the Agent. Persist one typed Competition Result in
-the active Pipeline Job.
+prioritization, and recommendations locally in the Agent. Return one canonical report and typed
+Competition payload to the active Pipeline Stage.
 
 ## Inputs and acquisition
 
@@ -38,16 +38,17 @@ copied pages, and non-comparable intent before analysis.
 6. Recommend differentiated scope, not imitation. Identify quick wins, growth work, and strategic
    work as views over measured evidence rather than separate authorities.
 
-## Result contract
+## Stage completion contract
 
-Write `jobs/<job-id>/competition/report.json`, then record a `competition` Result containing target
-URL, `manualCompetitorUrls`, location and industry context, opportunity score, competitors with
-title/rank/strengths/gaps/observation IDs, local clusters, and recommendations. Preserve the source
-analysis phases as bounded artifact references: `pageCrawlArtifactRef`,
+Write `jobs/<job-id>/competition/report.json`, then return its canonical content and a typed payload
+containing target URL, `manualCompetitorUrls`, location and industry context, opportunity score,
+competitors with title/rank/strengths/gaps/observation IDs, local clusters, and recommendations.
+Preserve the source analysis phases as bounded artifact references: `pageCrawlArtifactRef`,
 `rankingQueriesArtifactRef`, `serpCompetitorsArtifactRef`, `competitorAnalysisArtifactRef`, and
-`gapAnalysisArtifactRef`; use `null` when a phase is unavailable. Top-level Result provenance
-includes Run/Job/Attempt/Assignment, input Result versions, source timestamps, all observation IDs,
-and bounded raw artifact reference.
+`gapAnalysisArtifactRef`; use `null` when a phase is unavailable. Include source timestamps, all
+observation IDs, provenance, and any bounded raw artifact reference.
 
-Return to `dineway-content-pipeline`. Do not create a Brief, Draft, cluster, or CMS change from this
-Skill without a separate Job and owning Skill.
+Return to `dineway-content-pipeline`, which calls `content_pipeline_stage_complete` to derive the
+receipt and create and accept the immutable Competition Result. Do not call granular Result operations
+or create a Brief, Draft, cluster, or CMS change from this Skill without a separate Stage and owning
+Skill.

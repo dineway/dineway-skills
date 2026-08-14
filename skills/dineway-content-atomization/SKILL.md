@@ -35,13 +35,14 @@ explicit channel; do not assume one generic post fits every platform.
 5. For batch work, create one Job per source revision unless the parent Run explicitly records all
    source revision inputs. Failed sources must not erase completed Results.
 
-## Result and export
+## Stage completion and export
 
-Write `jobs/<job-id>/atomization/manifest.json`, then record an `atomization` Result containing
-`sourceCollection`, `sourceContentId`, `sourceDraftRevisionId`, and the atom array. Top-level Result
-identity must match the same exact CMS Draft Revision. Include source timestamps, observation IDs,
-input Result versions, provenance, and raw artifact reference.
+Write `jobs/<job-id>/atomization/manifest.json`, then return its canonical content and a typed
+payload containing `sourceCollection`, `sourceContentId`, `sourceDraftRevisionId`, and the atom
+array. Identity must match the same exact CMS Draft Revision. Include source timestamps,
+observation IDs, provenance, and any bounded raw artifact reference.
 
-The manifest can be transformed locally to JSON, Markdown, text, or CSV for downstream tools, but
-exports remain derived from the immutable Result. Return to `dineway-content-pipeline`; do not post,
-email, schedule, or advertise without the owning reviewed integration.
+The master calls `content_pipeline_stage_complete` to derive the receipt and create/accept the
+immutable Atomization Result. The manifest can be transformed locally to JSON, Markdown, text, or
+CSV for downstream tools, but exports remain derived from native state. Do not call granular Result
+operations, post, email, schedule, or advertise without the owning reviewed integration.

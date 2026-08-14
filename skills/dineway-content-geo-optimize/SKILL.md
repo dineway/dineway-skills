@@ -42,9 +42,9 @@ Stop on stale Assignment, Draft drift, missing required input Result, or unverif
    target before rescoring; do not mutate a prior Result.
 7. Stop after three broad passes. Record score history by exact Draft Revision.
 
-## Result contract
+## Stage completion contract
 
-Write `jobs/<job-id>/geo/report.json`, then record a `geo` Result with:
+Write `jobs/<job-id>/geo/report.json`, then return its canonical content and a typed payload with:
 
 - `scoreBasisVersion: dineway-deep-geo-v1`, `geoScore`, and `scoreCoverage`;
 - the four dimension scores and per-platform scores;
@@ -53,9 +53,10 @@ Write `jobs/<job-id>/geo/report.json`, then record a `geo` Result with:
 - top-level collection, content ID, current Draft Revision ID, content fingerprint, source times,
   observation IDs, provenance, and raw artifact reference.
 
-The Pipeline validator recalculates the aggregate. A mismatched score or Draft Revision fails.
-Return to `dineway-content-pipeline` after recording the candidate Result; do not approve, schedule,
-or publish.
+The master calls `content_pipeline_stage_complete`; the Pipeline validator recalculates the
+aggregate, derives the artifact receipt, and creates/accepts the immutable GEO Result atomically. A
+mismatched score or Draft Revision fails. Return to `dineway-content-pipeline`; do not call granular
+Result operations, approve, schedule, or publish.
 
 ## Interpretation
 

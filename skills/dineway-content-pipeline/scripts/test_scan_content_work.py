@@ -42,10 +42,25 @@ class ScanContentWorkTest(unittest.TestCase):
             "draftRevisionId": draft_revision_id,
         }
 
-    def state(self, entries: list[dict]) -> dict:
+    def state(
+        self,
+        entries: list[dict],
+        *,
+        current_stage: str = "research",
+        next_action: str = "begin_research",
+    ) -> dict:
         return {
-            "run": {"id": "run-1", "status": "active", "version": 4},
-            "jobs": entries,
+            "status": {
+                "run": {"id": "run-1", "status": "active", "version": 4},
+                "jobs": entries,
+                "currentStage": current_stage,
+                "nextAction": next_action,
+                "timing": {
+                    "elapsedMs": 480000,
+                    "agentWorkMs": 300000,
+                    "orchestrationMs": 180000,
+                },
+            },
             "content": {
                 "collection": "posts",
                 "id": "post-1",
@@ -78,18 +93,23 @@ class ScanContentWorkTest(unittest.TestCase):
     def test_starts_with_research_from_authoritative_run_identity(self) -> None:
         self.write_json("native-state.json", self.state([]))
         result = scan(self.run_dir)
-        self.assertEqual(result["nextAction"], "create-research-job")
+        self.assertEqual(result["nextAction"], "begin_research")
         self.assertEqual(result["runId"], "run-1")
+        self.assertEqual(result["timing"]["orchestrationMs"], 180000)
 
     def test_requires_human_approval_for_candidate_brief(self) -> None:
         candidate = self.result("brief", "job-brief")
         self.write_json(
             "native-state.json",
-            self.state([self.job_entry("brief", "job-brief", candidate=candidate)]),
+            self.state(
+                [self.job_entry("brief", "job-brief", candidate=candidate)],
+                current_stage="brief",
+                next_action="confirm_brief",
+            ),
         )
         self.write_text("jobs/job-brief/brief/brief.md", "# Brief")
         result = scan(self.run_dir)
-        self.assertEqual(result["nextAction"], "await-human-brief-approval")
+        self.assertEqual(result["nextAction"], "confirm_brief")
 
     def test_refreshes_a_result_receipt_that_differs_from_authority(self) -> None:
         accepted = self.result("research", "job-research")
@@ -101,7 +121,7 @@ class ScanContentWorkTest(unittest.TestCase):
         self.write_json("jobs/job-research/research/evidence.json", {"sources": []})
         self.write_text("jobs/job-research/research/findings.md", "Findings")
         result = scan(self.run_dir)
-        self.assertEqual(result["nextAction"], "refresh-result-receipt")
+        self.assertEqual(result["nextAction"], "refresh_result_receipt")
         self.assertTrue(any("differs" in error for error in result["errors"]))
 
     def test_rejects_a_revision_bound_result_for_an_old_draft(self) -> None:
@@ -113,7 +133,7 @@ class ScanContentWorkTest(unittest.TestCase):
         self.write_json("jobs/job-optimize/result-receipt.json", accepted)
         self.write_json("jobs/job-optimize/optimize/report.json", {"score": 70})
         result = scan(self.run_dir)
-        self.assertEqual(result["nextAction"], "refresh-current-draft-and-retry")
+        self.assertEqual(result["nextAction"], "refresh_current_draft_and_retry")
         self.assertFalse(result["jobs"][0]["draftRevisionCurrent"])
 
     def test_handoff_recovery_precedes_stage_execution(self) -> None:
@@ -138,14 +158,43 @@ class ScanContentWorkTest(unittest.TestCase):
             ),
         )
         result = scan(self.run_dir)
-        self.assertEqual(result["nextAction"], "accept-or-reject-handoff")
+        self.assertEqual(result["nextAction"], "accept_or_reject_handoff")
 
     def test_overdue_calendar_work_requires_reevaluation(self) -> None:
         state = self.state([])
         state["calendar"] = {"assignmentStatus": "overdue"}
         self.write_json("native-state.json", state)
         result = scan(self.run_dir)
-        self.assertEqual(result["nextAction"], "reevaluate-overdue")
+        self.assertEqual(result["nextAction"], "reevaluate_overdue")
+
+    def test_skips_optional_deep_geo_without_run_policy(self) -> None:
+        accepted = self.result("optimization", "job-optimize", "draft-2")
+        self.write_json(
+            "native-state.json",
+            self.state(
+                [self.job_entry("optimization", "job-optimize", accepted=accepted)],
+                current_stage="quality_attestation",
+                next_action="derive_quality_attestation",
+            ),
+        )
+        self.write_json("jobs/job-optimize/result-receipt.json", accepted)
+        self.write_json("jobs/job-optimize/optimize/report.json", {"score": 80})
+        result = scan(self.run_dir)
+        self.assertEqual(result["nextAction"], "derive_quality_attestation")
+
+    def test_runs_deep_geo_when_enabled_by_run_policy(self) -> None:
+        accepted = self.result("optimization", "job-optimize", "draft-2")
+        state = self.state(
+            [self.job_entry("optimization", "job-optimize", accepted=accepted)],
+            current_stage="geo_optimization",
+            next_action="begin_geo_optimization",
+        )
+        state["status"]["run"]["metadata"] = {"deepGeoEnabled": True}
+        self.write_json("native-state.json", state)
+        self.write_json("jobs/job-optimize/result-receipt.json", accepted)
+        self.write_json("jobs/job-optimize/optimize/report.json", {"score": 80})
+        result = scan(self.run_dir)
+        self.assertEqual(result["nextAction"], "begin_geo_optimization")
 
 
 if __name__ == "__main__":

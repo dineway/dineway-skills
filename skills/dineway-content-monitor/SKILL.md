@@ -57,8 +57,11 @@ rank, citation, or issue counts in place of unavailable data.
    Fix opportunity; after that opportunity is terminal, later evidence may create new work.
 7. Return to `dineway-content-pipeline`. Do not create a duplicate content item, mutate the
    page, or enter the Draft pipeline before the linked Fix opportunity is accepted.
-8. Record the completed Monitor Attempt as a typed `monitor` Result linked to observations,
-   deterministic evaluation receipts, policy version, next due time, and optional Fix trigger.
+8. Return the canonical Monitor artifact and typed payload linked to observations, deterministic
+   evaluation receipts, policy version, next due time, and optional Fix trigger.
+9. Let the master call `content_pipeline_stage_complete`, which derives the receipt, completes the
+   Attempt/Assignment, and creates/accepts the immutable Monitor Result. Do not call granular Result
+   operations.
 
 ## Output
 

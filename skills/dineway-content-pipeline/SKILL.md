@@ -1,149 +1,179 @@
 ---
 name: dineway-content-pipeline
-description: Orchestrate Dineway's end-to-end Research, Brief, Draft, Optimize, Publish, Monitor, and Fix workflow. Use to start or resume shared Pipeline Runs, coordinate specialist Skills, manage Assignments and Handoffs, enforce exact CMS Draft Revision review, or execute dynamic content-calendar work.
+description: Orchestrate Dineway's run-first Research, Brief, Draft, Optimize, release, publish, Monitor, and Fix workflow through native stage-level transactions and exact-Draft governance.
 ---
 
 # Dineway Content Pipeline
 
-Coordinate the content workflow; do not absorb specialist judgment. Pipeline plugin state is the
-shared authority for Runs, Jobs, Attempts, Results, Assignments, Handoffs, policies, calendar state,
-and provenance. Dineway CMS is the authority for article Draft and Live Revisions. Local
-`.dineway/content/` files are reconstructable evidence and working cache only.
+Use this Skill as the master Agent protocol. Specialist Skills perform research, writing, and
+optimization judgment. Native Pipeline state owns Runs, Jobs, Assignments, Attempts, Results,
+Handoffs, timing, and next actions. Dineway CMS owns Draft and Live Revisions. Local
+`.dineway/content/` files are reconstructable working evidence only.
 
 ## Required references
 
 Read `references/artifact-contract.md`, `references/workflow-policy.md`,
 `references/local-scheduling.md`, and `references/listen-contract.md` before changing state.
+Read `references/performance-benchmark.md` when measuring or reporting Pipeline speed.
 
-## Hard boundaries
+## Invariants
 
-- AI research, writing, classification, clustering, suggestions, and evidence-based dimension
-  scoring belong to specialist Skills. CLI and MCP only read, persist, validate, and coordinate.
-- Use the `content_pipeline_*` MCP tools inside an Agent. Use `dineway pipeline` for deterministic
-  operator/script control only; it has no specialist execution command.
-- Never trust local status over `content_pipeline_status_get` and exact CMS reads.
-- Never let a stale or expired assignee submit. Every mutation uses the current Assignment and
-  optimistic Job or Run version. A retry creates a new Attempt.
-- Results are immutable candidates. Acceptance creates selection history; it never edits a Result.
-- Never copy an article body into Pipeline Result authority. Writer and Fix Result payloads contain
-  the native CMS identity and exact Draft Revision only.
-- Never publish generated content directly. Exact-Draft rules, quality attestation, human review,
-  release authorization, and calendar capacity remain separate gates.
-- Do not implement NLWeb/Chat Listen. Record that source as `not_configured` or `not_observed` until
-  its native owner exists.
+- Start or explicitly resume the native Run before Research creates its first artifact.
+- Follow `content_pipeline_status_get.currentStage` and `.nextAction`; do not rebuild normal routing
+  from local files.
+- Use `content_pipeline_stage_begin` and `content_pipeline_stage_complete` for production work.
+  Granular Job, Assignment, Attempt, Result-record, and Result-accept writes are internal invariants,
+  not an Agent workflow.
+- Treat every retry as at-least-once. Reuse stable idempotency keys, refresh native state after an
+  ambiguous response, and never infer whether a write committed.
+- Never copy article bodies into Pipeline Result authority. Writer and Fix Results bind the native
+  content identity and exact Draft Revision.
+- Never weaken exact-Draft Review, Quality Attestation, schema, media, calendar, role, CSRF, or
+  release-authorization gates to save time.
+- Deep GEO is optional unless `run.metadata.deepGeoEnabled` is exactly `true`.
+- AI reasoning stays in specialist Skills. Deterministic surfaces persist, validate, coordinate,
+  authorize, and report; they do not hide model execution.
 
-## Session entry and recovery
+## Entry and recovery
 
-1. Read the current Site Briefing, Site Context, bylines, schema, content identity, active Pipeline
-   policies, and `content_pipeline_agent_wake_plan_get` response.
-2. List Runs relevant to the selected opportunity/content. Create a Run only when no active Run
-   represents the same work. Otherwise call `content_pipeline_status_get` and resume it.
-3. Refresh `.dineway/content/runs/<run-id>/native-state.json` with the current Run status, Jobs,
-   active Assignments, candidate/accepted Results, pending Handoffs, current CMS Draft, review,
-   release, observations, and calendar state.
-4. Run `python3 scripts/scan_content_work.py --workspace <site-root> --run <run-id> --write --pretty`.
-   Follow recovery actions before stage work: refresh a mismatched Handoff/Result receipt, accept or
-   reject a Handoff, reacquire expired responsibility, retry a failed Job, refresh a changed Draft,
-   or reevaluate overdue calendar work.
-5. Process due Monitor evidence before new creation. Recalculate queue priority from current
-   evidence. Do not reuse yesterday's ordering.
+1. Read the Site Briefing, Site Context, schema, bylines, current content identity, active Pipeline
+   policies, and `content_pipeline_agent_wake_plan_get`.
+2. Call `content_pipeline_run_start` immediately. Pass `runId` only to resume an explicitly known
+   compatible Run; never coalesce work by title or objective.
+3. Call `content_pipeline_status_get`. If it reports Handoff, failed/blocked work, Draft drift, or
+   overdue capacity, resolve that state before normal production.
+4. Cache the native status plus current CMS content and release-readiness response in
+   `.dineway/content/runs/<run-id>/native-state.json`, then run:
 
-## Job protocol
+   ```bash
+   python3 scripts/scan_content_work.py --workspace <site-root> --run <run-id> --write --pretty
+   ```
 
-For every specialist stage:
+5. Trust native `currentStage`, `nextAction`, and timing. Local scanner recovery actions may only
+   require refreshing corrupt/missing cache artifacts or reconciling an authoritative Handoff,
+   Assignment, Attempt, Draft, or calendar state.
 
-1. Create one Job with the exact accepted input Result versions and current CMS identity where
-   applicable. Never infer an input version from a local file.
-2. Create or receive the single active Assignment. A different Agent must use a Handoff.
-3. Start an Attempt with the current Job version. Use Attempt updates to record monotonic 0-99
-   progress, bounded partial artifact references, and `running`/`blocked` state. Record a failed
-   Attempt explicitly before retrying; completion to 100 happens only when a Result is recorded.
-4. Invoke only the narrow child Skill. It must return control after recording one typed Result.
-5. Record the candidate Result through `content_pipeline_result_record`, including provenance,
-   source times, observation IDs, raw artifact reference, Assignment/Attempt identity, and exact
-   Draft Revision where applicable.
-6. Refresh authoritative status, save the returned Result unchanged as
-   `jobs/<job-id>/result-receipt.json`, rerun the scanner, then accept or await approval as defined
-   below.
+## Standard four-stage protocol
 
-## Research → Brief → Draft → Optimize
+The standard production lifecycle uses no more than nine state-changing lifecycle calls:
+
+1. one `content_pipeline_run_start`;
+2. Research Begin + Complete;
+3. Brief Begin + Complete;
+4. Writer Begin + Complete; and
+5. Optimization Begin + Complete.
+
+Each Begin atomically creates or reuses the compatible Job, active Assignment, and running Attempt.
+Do specialist work outside the transaction. Each Complete atomically validates the typed payload,
+derives SHA-256/UTF-8 byte receipts from canonical artifacts, records immutable provenance and
+observations, finishes the Attempt and Assignment, applies acceptance policy, and returns the next
+action. Never hand-build a Result envelope, byte count, hash, or acceptance write.
 
 ### Research
 
-Run `dineway-content-research`. It writes `research/evidence.json` and `research/findings.md`, then
-records a typed Research Result aligned to the source research contract. Valid Research is selected
-automatically by the plugin in the same authoritative write after schema and score validation; the
-Skill must validate source provenance and artifact receipt matching before submission. Missing
-metrics remain `null` and unavailable sources remain explicit.
+Call `content_pipeline_stage_begin` with stage `research` before collecting evidence. Run
+`dineway-content-research`, recording explicit source availability and observation IDs. Complete
+with canonical `research/evidence.json` and `research/findings.md` content plus the typed Research
+payload and source timestamps. Valid Research is accepted in that Complete boundary.
 
 ### Brief
 
-Create the Brief Job with the accepted Research Result ID/version and run
-`dineway-content-brief`. The Brief Result must preserve the exact Research input and outline
-contract. Stop after candidate submission. A human operator reviews the artifact and explicitly
-accepts it through a human-authenticated Dineway surface. Agent/API-token actors are rejected for
-Brief acceptance and must not silently approve it.
+Begin `brief`; native state resolves and binds the latest accepted Research Result version. Run
+`dineway-content-brief` and complete with `brief/brief.md` plus the typed Brief payload. Brief
+acceptance is the single human governance decision in this lifecycle: an authenticated human must
+complete or replay the stage with `briefApproval.confirmed=true`. API-token and system actors cannot
+approve it. Do not start Writer until native status returns `begin_writer`.
 
-### Draft
+### Writer
 
-Create the Writer Job only from the accepted Brief version and run `dineway-content-writer`.
-Immediately after structural/schema validation, use `dineway content create --draft` for new
-content or `dineway content update --draft --rev <current-revision>` for an existing item. Record a
-Draft Result containing only collection, content ID, exact Draft Revision ID, revision token, and
-schema fingerprint. Refresh CMS state before acceptance.
+Begin `writer` with the target identity; native state resolves and binds the accepted Brief version.
+Run `dineway-content-writer`. After structural validation, create or update the native CMS Draft
+once. Complete with the CMS Draft receipt artifact and a Draft Result containing collection, content
+ID, exact Draft Revision ID, revision token, and schema fingerprint. Refresh CMS state before
+Complete.
 
-### Optimize
+### Optimization and Preview QA
 
-Create the Optimization Job against that exact Draft Result and run
-`dineway-content-optimize`. Its public Content Score is the rounded mean of measured SEO and GEO;
-when only one is measured that value is retained, and when neither is measured the score is
-`null`. Evidence-linked edits create explicit newer CMS Draft Revisions. Record every before/after
-score and suggestion decision. The final Optimization Result must reference the current Draft.
+Begin `optimization` against the exact Writer Draft. Run `dineway-content-optimize`; evidence-linked
+edits may create newer Draft Revisions. Perform one complete Preview QA on the final exact Draft:
 
-Run `dineway-content-geo-optimize` as a separate Job when the active policy or content value calls
-for deep citation analysis. Its independent GEO score covers quotability, answer structure,
-citation readiness, and entity clarity; it does not replace the normal Content Score.
+- schema and identity;
+- rendered structure and required media/accessibility;
+- SEO crawl and package checks;
+- source provenance and unresolved rules; and
+- final SEO/GEO/brand/evidence/structure/readability scores.
 
-## Optional specialist Jobs
+Complete Optimization once with the final report, suggestion decisions, score history, mandatory
+gate results, and exact current Draft identity. If `deepGeoEnabled` is true, run a separate
+`geo_optimization` Begin/Complete against the same Draft; otherwise proceed directly to Attestation.
 
-- `dineway-content-competition`: acquire competitor evidence, then reason locally about gaps,
-  opportunity score, and clusters.
-- `dineway-content-ai-visibility`: observe supported AI web clients through Browser Use or the
-  user's own Agent client and record per-platform evidence.
-- `dineway-content-atomization`: derive channel assets from an exact native Draft/Live Revision;
-  atoms live in their Result, never as a duplicate article authority.
-- `dineway-site-analysis`: learn site, bylines, inventory, internal links, crawl health, and
-  cannibalization before or alongside the main flow.
+## Derived Quality Attestation
 
-## Review, release, and publish
+Call `content_pipeline_quality_attestation_derive` after Optimization and optional deep GEO are
+accepted. Supply only:
 
-After the current Optimization and required deep-GEO Results are accepted, reread the current CMS
-Draft. Record quality attestation only when every accepted revision-bound Result references that
-same Draft Revision, all mandatory gates pass, quality policy versions are current, and local
-artifact receipts match native Results. Aggregate scores cannot bypass a failed gate.
+- Run ID;
+- collection and content ID;
+- additional non-derivable QA observation IDs; and
+- an idempotency key.
 
-Submit a native Review Request for the exact Draft. After approval and release authorization, use
-`dineway content schedule` for the existing content ID and approved revision. Direct publication
-requires an explicit operator decision and identical gates. Any material edit invalidates the
-attestation, approval, and release readiness for the prior revision.
+The service derives the current Draft Revision, Schema fingerprint, active policy version, accepted
+Research/Brief/Writer/Optimization and optional GEO Result IDs, canonical artifact fingerprints,
+media IDs, mandatory gates, scores, and Result observation lineage. Never submit those stable
+bindings manually. A Draft, Schema, policy, accepted Result, media, or evidence change invalidates
+the Attestation fail-closed.
 
-## Monitor and Fix
+## Release readiness, Review, and publish
 
-Run `dineway-content-monitor` only for due sources. It records observations and deterministic
-evaluation receipts; it never edits content. A qualifying regression creates one deduplicated Fix
-trigger and linked opportunity. Fix reuses the same CMS content identity, creates a new Run/Jobs as
-needed, writes a new Draft Revision, and repeats Optimization, review, and release.
+Before requesting approval or publishing, call the read-only `content_release_readiness` tool. It
+returns every current blocker in one response, including actor/operation, exact Draft, Review,
+release authorization, Quality Attestation, Schema/media evidence, calendar policy/capacity, and
+schedule-time problems. It creates no grant, reservation, or approval state.
 
-## Calendar and local activation
+Resolve all blockers, submit one exact-Draft editorial Review Request, and wait for human approval.
+For token actors, create and obtain approval for the exact release request. Re-run readiness with
+the Review and release IDs. Publish only when `ready=true` and the response says `publish`.
 
-Codex Scheduled or an equivalent local scheduler may activate this Skill within the rolling
-three-day execution opportunity. It does not own state. Respect hard daily ceilings of 100 Draft
-and 100 Publish operations per site and 10 per collection, byline, or locale, plus lower active
-targets. Mark missed work overdue and reevaluate it next session before resuming or publishing.
+Use `content_publish` or `dineway content publish`. The successful response includes the durable
+publication receipt derived from the consumed release grant: exact Draft/Live Revision IDs, Review,
+release authorization, action hash, policy contributions, actor, and timestamps. Save that returned
+receipt directly; do not assemble a local substitute or wait for a second receipt step.
 
-## Session exit
+## Post-publish verification
 
-Refresh native state, rerun the scanner, and record the exact next action. If responsibility moves,
-create a Pipeline Handoff rather than writing instructions only in a local note. Report separately:
-completed Results, current Run/Job/Attempt, exact CMS Draft, blockers, human decisions, source
-unavailability, and next action.
+The full Preview QA already ran before release. After publish, perform only a lightweight live
+check:
+
+1. expected title;
+2. expected Live Revision ID;
+3. expected card/item count where relevant;
+4. required images load; and
+5. no visible error state.
+
+Do not repeat the full crawl, schema audit, or package check unless the live check detects drift.
+
+## Optional Jobs, Monitor, and Fix
+
+- Competition, AI Visibility, Atomization, Site Analysis, and Monitor use their typed specialist
+  Jobs when native status or the wake plan calls for them.
+- Monitor records observations and deterministic evaluation only; it never edits content.
+- A qualifying regression creates one deduplicated Fix opportunity for the existing content ID.
+  Fix starts/resumes a Run, creates a new Draft Revision, and repeats the same stage, Attestation,
+  Review, readiness, and release rules.
+- Unsupported NLWeb/Chat Listen sources remain explicitly `not_configured` or `not_observed` until
+  their native owner provides the contract.
+
+## Exit
+
+Refresh native status and CMS identity, save the returned native Result/publication receipts,
+rerun the scanner, and use `scripts/benchmark_pipeline_trace.py` for equivalent-scenario performance
+evidence. Report:
+
+- current Run and stage;
+- accepted Results and exact Draft/Live Revision;
+- elapsed, Agent-work, and orchestration timing;
+- all remaining readiness blockers and human decisions;
+- source unavailability; and
+- native next action.
+
+If responsibility moves, create a native Handoff. Do not leave ownership only in a local note.

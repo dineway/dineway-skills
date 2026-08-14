@@ -5,9 +5,9 @@ description: Build and persist source-attributed Dineway content research. Use f
 
 # Dineway Content Research
 
-Execute one Research Job and return control to `dineway-content-pipeline`. The authoritative output
-is a typed immutable Research Result; `evidence.json` and `findings.md` are derived, inspectable
-artifacts.
+Execute one Research Stage that the master Pipeline already began, then return canonical artifacts
+and the typed payload to `dineway-content-pipeline`. Native Stage Complete creates the authoritative
+immutable Research Result; `evidence.json` and `findings.md` remain inspectable working artifacts.
 
 ## Inputs
 
@@ -47,21 +47,20 @@ unavailable sources explicitly; a missing metric is `null`, not zero.
    candidates in `findings.md`; do not add non-contract fields to normalized JSON when raw evidence
    can preserve them losslessly.
 
-## Artifacts and Result
+## Artifacts and Stage completion
 
 Write:
 
 - `.dineway/content/runs/<run-id>/jobs/<job-id>/research/evidence.json`
 - `.dineway/content/runs/<run-id>/jobs/<job-id>/research/findings.md`
 
-Then record a `research` Result with `query`, `researchType`, nullable `depth`, language, country,
-nullable summary, findings, sources, keywords, SERP results, evidence, content gaps, competitors,
-topic directions, subtopics, keyword clusters, and both artifact refs. Add Result-level provenance,
-source timestamps, observation IDs, raw artifact reference, Assignment, Attempt, and input Result
-versions. Provenance uses the strict fields `skill`, nullable `skillVersion`, `agentClient`, nullable
-`model`, `collector`, source timestamp records, and artifact receipts with exact ref, SHA-256, and
-byte count. The evidence and findings receipts must exactly cover both Research artifact refs.
+Return both artifact contents plus a typed payload containing `query`, `researchType`, nullable
+`depth`, language, country, nullable summary, findings, sources, keywords, SERP results, evidence,
+content gaps, competitors, topic directions, subtopics, keyword clusters, and both artifact refs.
+Also return strict provenance, source timestamps, observation IDs, and any bounded raw artifact
+reference. Do not calculate artifact hashes or byte counts.
 
-The plugin auto-selects valid Research in the same immutable Result write only when the contract has
-at least one available timestamped attributed source, source timestamps, and matching receipts.
-Do not make a separate accept call or create a Brief, Draft, or CMS mutation from this Skill.
+The master calls `content_pipeline_stage_complete`, which derives receipts, finishes the native
+Attempt and Assignment, creates the immutable Research Result, and accepts it only when at least one
+available timestamped attributed source and matching evidence are present. Do not call granular
+Result or acceptance operations or create a Brief, Draft, or CMS mutation from this Skill.

@@ -1,156 +1,108 @@
 # Pipeline Local Artifact Contract
 
-`.dineway/content/` is derived, inspectable Agent working memory. The Pipeline plugin and Dineway
-CMS are the authorities. Another machine must be able to reconstruct this tree from native state
-and immutable Result provenance.
+`.dineway/content/` is reconstructable Agent working memory. Native Pipeline/CMS state is the
+authority. Local files never grant permission to mutate, approve, attest, schedule, or publish.
 
 ## Layout
 
 ```text
-.dineway/content/
-├── runs/
-│   └── <pipeline-run-id>/
-│       ├── native-state.json
-│       ├── status.json
-│       └── jobs/
-│           └── <pipeline-job-id>/
-│               ├── attempt-notes.md
-│               ├── result-receipt.json
-│               ├── research/{evidence.json,findings.md}
-│               ├── brief/brief.md
-│               ├── cms/draft-receipt.json
-│               ├── optimize/report.json
-│               ├── geo/report.json
-│               ├── competition/report.json
-│               ├── ai-visibility/report.json
-│               ├── atomization/manifest.json
-│               └── monitor/evidence.json
-└── site-analysis/
-    └── <analysis-key>/
-        ├── evidence.json
-        └── report.md
+.dineway/content/runs/<run-id>/
+├── native-state.json
+├── status.json
+├── publication-receipt.json
+└── jobs/<job-id>/
+    ├── result-receipt.json
+    ├── research/{evidence.json,findings.md}
+    ├── brief/brief.md
+    ├── cms/draft-receipt.json
+    ├── optimize/report.json
+    ├── geo/report.json
+    └── <optional-stage>/<artifact>
 ```
 
-Use immutable native Run and Job IDs as directory names. Do not use title, keyword, slug, URL, or
-opportunity name as identity.
+Use native Run and Job IDs as directory names. Never use title, keyword, slug, URL, or opportunity
+name as identity. Do not commit site-specific artifacts unless that site repository permits it.
 
-## Native snapshot
+## Native snapshot version 5
 
-Refresh `native-state.json` at session entry, before every state-changing command, after every
-Result selection or CMS write, and at exit. It is a cache, never an authorization receipt.
+Cache the exact `content_pipeline_status_get` response under `status`, then add current CMS and
+read-only release data without rewriting the status fields:
 
 ```json
 {
-	"contractVersion": 4,
-	"observedAt": "2026-08-13T00:00:00Z",
-	"run": { "id": "run-id", "status": "active", "version": 4 },
-	"jobs": [
-		{
-			"job": {
-				"id": "job-id",
-				"stage": "optimization",
-				"status": "completed",
-				"version": 6,
-				"acceptedResultId": "result-id",
-				"acceptedResultVersion": 2
-			},
-			"activeAssignment": null,
-			"pendingHandoff": null,
-			"candidateResult": null,
-			"acceptedResult": {
-				"id": "result-id",
-				"jobId": "job-id",
-				"kind": "optimization",
-				"resultVersion": 2,
-				"collection": "posts",
-				"contentId": "post-id",
-				"draftRevisionId": "draft-revision-id"
-			}
-		}
-	],
+	"contractVersion": 5,
+	"observedAt": "2026-08-14T00:08:00Z",
+	"status": {
+		"run": { "id": "run-id", "status": "active", "version": 5 },
+		"currentStage": "quality_attestation",
+		"nextAction": "derive_quality_attestation",
+		"timing": {
+			"startedAt": "2026-08-14T00:00:00Z",
+			"generatedAt": "2026-08-14T00:08:00Z",
+			"elapsedMs": 480000,
+			"agentWorkMs": 300000,
+			"orchestrationMs": 180000
+		},
+		"jobs": []
+	},
 	"content": {
 		"collection": "posts",
 		"id": "post-id",
-		"revision": "opaque-revision-token",
 		"draftRevisionId": "draft-revision-id",
-		"liveRevisionId": "live-revision-id",
-		"status": "draft"
+		"liveRevisionId": "live-revision-id"
 	},
-	"collectionSchema": {
-		"slug": "posts",
-		"schemaFingerprint": "64-character-sha256"
-	},
-	"calendar": { "assignmentStatus": "scheduled" },
-	"qualityPolicy": { "id": "policy-id", "version": 2 },
-	"qualityAttestation": null,
-	"review": null,
-	"release": null
+	"releaseReadiness": {
+		"ready": false,
+		"nextAction": "fix_release_blockers",
+		"blockers": []
+	}
 }
 ```
 
-`candidateResult` is the latest unselected Result when present. Valid Research submission is
-auto-selected by the plugin; Brief and other reviewable stages remain candidates until accepted.
-`acceptedResult` must be the exact
-object returned by the plugin. Enrich the Run status response with pending Handoff and CMS reads;
-do not infer them from prior sessions.
+The scanner projects native `currentStage`, `nextAction`, and timing. It may override the displayed
+next action only for authoritative recovery or a corrupt/missing local cache artifact.
 
-## Result receipt
+## Stage Complete and Result receipts
 
-Write the authoritative Result object unchanged to `jobs/<job-id>/result-receipt.json` after every
-refresh. The scanner uses exact logical equality. Do not edit a receipt to make it look current.
-When the accepted Result changes, preserve working artifacts but replace the derived receipt from
-the native read.
+Pass canonical artifact content to `content_pipeline_stage_complete`. The server derives the
+artifact reference, SHA-256, UTF-8 byte count, provenance receipt, immutable typed Result,
+acceptance state, and next action in one boundary. Callers must not precompute or duplicate these
+fields in `evidence.json`, a Result envelope, or a separate wrapper.
 
-## Result provenance
+Store the returned Result object unchanged as `jobs/<job-id>/result-receipt.json` when a local cache
+is useful. It is replaceable from native status. Never edit it to make local state appear current.
 
-Every specialist Result uses the same strict provenance object: `skill`, nullable `skillVersion`,
-`agentClient` (`codex`, `claude`, or `other`), nullable `model`, `collector` (`local`, `browser`,
-`forgeway`, `dineway`, or `user`), `sourceTimestamps`, and `artifactReceipts`. Each source timestamp
-records source kind, collection time, nullable validity deadline, and availability. Each artifact
-receipt records the exact artifact ref, SHA-256, and positive byte count. Unknown provider fields
-belong in bounded raw evidence, not in the normalized provenance object.
+Canonical stage artifacts are:
 
-## Specialist artifacts
+- Research: `research/evidence.json` and `research/findings.md`;
+- Brief: `brief/brief.md`;
+- Writer/Fix: `cms/draft-receipt.json`;
+- Optimization: `optimize/report.json`;
+- optional deep GEO: `geo/report.json`; and
+- optional stages: their typed Result artifacts.
 
-- Research `evidence.json` contains source records, availability, timestamps, bounded raw artifact
-  references, claims, keywords, SERP competitors, gaps, topic directions, and clusters. It maps
-  losslessly to the canonical Research Result where fields are normalized.
-- Research `findings.md` explains intent, audience, differentiation, risky claims, internal-link
-  candidates, and conclusions. It is not the authoritative Result.
-- `brief.md` preserves the accepted Research Result ID/version, topic, keywords, content type,
-  intent, target length, source-aligned outline fields, competitor URLs, questions, unique angle,
-  audience context, guardrails, Dineway link/image plans, and exclusions.
-- `draft-receipt.json` is the CMS response for the exact Draft write. Never store the article body
-  in a Pipeline Result receipt.
-- Optimize `report.json` contains SEO/GEO inputs, public score basis and coverage, breakdowns,
-  suggestions with apply/dismiss decisions, score history, exact Draft revisions, evidence IDs,
-  mandatory gates, and artifact references.
-- Deep GEO `report.json` contains its independent score basis and coverage, four dimensions,
-  per-platform observations, citation gaps, suggestions, and history.
-- Competition, AI Visibility, Atomization, Site Analysis, and Monitor artifacts preserve the typed
-  fields defined by their Result contracts plus bounded evidence references.
+Research evidence preserves sources, availability, timestamps, observations, claims, metrics, and
+bounded raw references. Missing metrics remain `null`; unavailable sources are explicit. The Draft
+receipt contains native identity, never a second article body. Optimization includes exact Draft
+identity, suggestion decisions, score history, Preview QA gates, and evidence IDs.
 
-## Fingerprints and revision identity
+## Identity and invalidation
 
-Use SHA-256 of raw artifact bytes when a Result records a content/artifact fingerprint. Do not
-canonicalize Markdown or JSON silently. An Optimize/GEO/Atomization/Fix Result is current only when
-its top-level `collection`, `contentId`, and `draftRevisionId` match the current CMS Draft exactly.
-A later Draft invalidates earlier revision-bound readiness even when the visible text appears
-unchanged.
+Optimization, GEO, Atomization, and Fix Results are current only when collection, content ID, and
+Draft Revision ID exactly match the CMS Draft. A later Draft invalidates old optimization,
+Attestation, Review, and release readiness even if visible text looks unchanged. Schema, media,
+policy, accepted-Result, or evidence changes can also invalidate Attestation/readiness.
 
-## Derived scanner
+## Publication receipt
 
-`scripts/scan_content_work.py` reads the native snapshot and cached artifacts and writes
-`status.json`. It prioritizes Handoff recovery, expired Assignment recovery, retry, overdue calendar
-reevaluation, Result receipt refresh, missing derived artifacts, and Draft drift before normal
-stage routing. `status.json` never grants permission to mutate, accept, approve, schedule, or
-publish.
+On successful publish, save the server-returned `publicationReceipt` directly to
+`publication-receipt.json`. It is derived from the consumed durable release grant. Never create a
+second local receipt, calculate its action hash, or delay completion for receipt assembly.
 
 ## Safety
 
-- Keep secrets, session cookies, API keys, unredacted PII, and full private analytics exports out
-  of this tree.
+- Keep secrets, cookies, API keys, unredacted PII, and full private analytics exports out of this
+  tree.
 - Preserve bounded raw evidence outside public copy and reference it from immutable provenance.
-- Do not commit site-specific artifacts unless the site repository explicitly permits it.
-- If local and native state disagree, preserve useful evidence, refresh native state, and follow
-  the authoritative lifecycle.
+- If local and native state disagree, preserve useful artifacts, refresh native state, and follow
+  native status/readiness.

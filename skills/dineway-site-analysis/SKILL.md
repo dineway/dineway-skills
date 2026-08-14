@@ -51,10 +51,11 @@ Return:
 - `Site Context Proposals`
 
 For use inside the master loop, store derived evidence under
-`.dineway/content/site-analysis/<analysis-key>/`. When executed as a Pipeline Job, record an
-immutable typed `site_analysis` Result with Run/Job/Attempt/Assignment, artifact refs, provenance,
-source timestamps, and observation IDs. Never store credentials, private PII, or unbounded page
-dumps.
+`.dineway/content/site-analysis/<analysis-key>/`. When executed as a Pipeline Stage, return the
+canonical artifact contents and a typed `site_analysis` payload with artifact refs, provenance,
+source timestamps, and observation IDs. The master calls `content_pipeline_stage_complete` to
+derive receipts and create and accept the immutable Result. Never call granular Result operations or
+store credentials, private PII, or unbounded page dumps.
 
 ## Boundaries
 

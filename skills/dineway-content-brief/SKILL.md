@@ -5,8 +5,9 @@ description: Create an evidence-backed Dineway content Brief from an accepted Re
 
 # Dineway Content Brief
 
-Execute one Brief Job from an accepted Research Result. Persist a typed candidate Result, then stop
-for explicit human acceptance before Writer may start.
+Execute one Brief Stage from the accepted Research Result after the master Pipeline has begun it.
+Return the canonical Brief artifact and typed payload, then stop for authenticated-human Stage
+completion before Writer may start.
 
 ## Required inputs
 
@@ -38,18 +39,18 @@ match the accepted Result provenance.
 7. Distinguish required scope, optional ideas, risky claims, and exclusions. Never invent menu,
    hours, pricing, allergen, award, review, staff, medical, legal, or financial facts.
 
-## Artifact and Result
+## Artifact and Stage completion
 
 Write `.dineway/content/runs/<run-id>/jobs/<job-id>/brief/brief.md`. Bind it to the Run, Job,
 Research Result ID/version, collection, locale, byline, optional existing content ID/translation
 group, and schema fingerprint.
 
-Record a `brief` Result containing the exact Research Result reference, topic, keywords, content
+Return a typed payload containing the exact Research Result reference, topic, keywords, content
 type, nullable intent/word count, objective, outline, competitor URLs, notes, questions, unique
 angle, market fields, authority/format fields, audience context, guardrails, internal links, image
-plan, and artifact ref. Include Result-level provenance and observations.
+plan, artifact ref, provenance, and observations.
 
-Return to `dineway-content-pipeline` with a candidate Result. The Agent must not call Result accept;
-a human operator reviews the Brief and explicitly accepts it through a human-authenticated Dineway
-surface. API-token and system actors are rejected for Brief acceptance. Do not write a CMS Draft
-from this Skill.
+An authenticated human reviews the artifact and calls `content_pipeline_stage_complete` with
+`briefApproval.confirmed=true`. That transaction derives the artifact receipt, creates and accepts
+the immutable Brief Result, and returns `begin_writer`. API-token and system actors are rejected.
+Do not call granular Result/accept operations or write a CMS Draft from this Skill.

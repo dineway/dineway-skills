@@ -65,11 +65,14 @@ component as `null`; never use zero for unavailable evidence.
 Use stricter active policy targets for high-value/competitive work, while treating 70 as the normal
 minimum guidance. Optimize selectively; readability and evidence remain primary.
 
-## Result
+## Stage completion
 
-Write `.dineway/content/runs/<run-id>/jobs/<job-id>/optimize/report.json`, then record an
-`optimization` Result with Content Score fields, dimensions, suggestions, applied suggestion IDs,
-mandatory gates, score history, and artifact ref. Bind top-level collection/content/Draft Revision,
-content fingerprint, observations, source times, provenance, and raw artifact reference.
+Write `.dineway/content/runs/<run-id>/jobs/<job-id>/optimize/report.json`. Return its canonical
+content plus a typed payload with Content Score fields, dimensions, suggestions, applied suggestion
+IDs, mandatory gates, score history, artifact ref, collection/content/Draft Revision, content
+fingerprint, observations, source times, provenance, and any bounded raw artifact reference.
 
-Return to `dineway-content-pipeline`. Do not attest quality, approve, schedule, or publish here.
+Return to `dineway-content-pipeline`, which refreshes the exact CMS Draft and calls
+`content_pipeline_stage_complete`. That transaction derives the receipt, creates and accepts the
+immutable Optimization Result, and routes to optional deep GEO or derived Attestation. Do not call
+granular Result operations, attest quality, approve, schedule, or publish here.

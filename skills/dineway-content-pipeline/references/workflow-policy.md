@@ -48,7 +48,8 @@ availability invalidates a key conclusion. Invalidate later stages when their in
 
 ## Human gates
 
-- Require explicit human acceptance of the Brief candidate before Writer starts.
+- Require an authenticated human to confirm the Brief inside Brief Stage Complete; that same
+  transaction creates and accepts the immutable Brief Result before Writer starts.
 - Store generated output immediately as a native Draft after Writer structural validation.
 - Require accepted Optimization and any policy-required deep GEO Result to reference that exact
   current Draft Revision before quality attestation.
