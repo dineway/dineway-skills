@@ -1,78 +1,85 @@
 ---
 name: dineway-content-optimize
-description: Score and optimize an exact Dineway CMS Draft Revision for combined SEO and GEO performance. Use for SERP-relative 0-100 Content Score, evidence-linked breakdowns, prioritized suggestions, apply or dismiss decisions, iterative Draft revisions, score history, and quality-gate readiness.
+description: Optimize one exact Dineway Draft, then produce the canonical native content-only QA report used by Quality Attestation.
 ---
 
 # Dineway Content Optimize
 
-Run the normal SEO/GEO optimization workflow against the exact current CMS Draft. Produce the
-familiar combined 0-100 Content Score plus independent SEO and GEO values. Use
-`dineway-content-geo-optimize` for deeper citation inspection.
+Run one consolidated SEO/GEO optimization pass against the exact current CMS Draft, then perform one
+final deterministic content QA and rescore. Use `dineway-content-geo-optimize` only when the Run
+explicitly enables deep GEO.
 
 ## Inputs
 
-- Current Pipeline Run, Optimization Job, Assignment, Attempt, and accepted input Result versions.
-- Exact CMS collection, content ID, Draft Revision ID, revision token, schema fingerprint, and full
-  Draft content.
-- Accepted Research, Brief, and Draft Results; current SERP/competitor evidence; Site Context;
-  selected byline; media; observations; and active quality/rule policy.
-- Read `references/optimization-methodology.md`,
-  `../dineway-seo/references/apply-loop.md`, and the Pipeline workflow/artifact contracts.
+- Current Pipeline Run, Optimization Job, active Assignment/Attempt, and accepted input Result
+  versions.
+- Exact collection, content ID, Draft Revision ID, revision token, schema fingerprint, content
+  fingerprint, and full Draft content.
+- Accepted Research, Brief, and Writer Results; current SERP/competitor evidence; Site Context;
+  selected byline; media; persisted Observations; and active quality/rule policy.
+- Read `references/optimization-methodology.md`, `../dineway-seo/references/apply-loop.md`, and the
+  Pipeline workflow/artifact contracts.
 
 Stop on stale Assignment, changed Research/Brief selection, schema drift, or Draft drift.
 
-## Public score contract
+## Consolidated optimization pass
+
+1. Establish one fixed evidence baseline from the approved Brief, current SERP evidence, schema,
+   links, media, Site Context, and byline samples.
+2. Produce evidence-linked dimensions and suggestions with stable IDs, type, title, description,
+   optional proposed content, auto-applyability, priority, Observation IDs, decision, and dismissal
+   reason.
+3. Prioritize missing topics, unsupported/thin sections, heading hierarchy, metadata, verified links,
+   and voice. Reject keyword stuffing, competitor imitation, unsupported expansion, and voice damage.
+4. Apply all coherent blocking/high-impact changes in one update through `dineway content update
+   --draft --rev <current-revision>`. Refresh the exact Draft identity once after the update.
+5. Re-score the complete final Draft. Run another edit pass only when the canonical QA report leaves a
+   mandatory content or governance check failed; never chase 100.
+
+## Score contract
 
 - `seoScore` measures SERP-relative topical coverage and on-page search readiness.
 - `geoScore` measures direct-answer potential, citation worthiness, structured information, and
   observed question coverage at normal Optimize depth.
-- `score` is `round((seoScore + geoScore) / 2)` when both are measured. If only one is measured,
-  use it. If neither is measured, use `null`.
-- `scoreCoverage` is measured component count divided by two.
-- Use `scoreBasisVersion: dineway-content-score-v1`. The Pipeline recalculates and rejects a
-  caller-authored mismatch.
+- `score` is `round((seoScore + geoScore) / 2)` when both are measured, the measured side when only
+  one is available, and `null` when neither is available.
+- `scoreCoverage` is the measured component count divided by two.
+- Use `scoreBasisVersion: dineway-content-score-v1`; the Pipeline rejects mismatches.
+- Preserve unavailable values as `null`, never zero.
 
-Normalize source values expressed on 0-1 to 0-100 before recording. Preserve every unmeasured
-component as `null`; never use zero for unavailable evidence.
+## Canonical content QA
 
-## Workflow
+Build exactly one `contentQa` report for the final exact Draft through CLI, MCP, and native
+interfaces. It contains report version, checked time, collection, content ID, Draft Revision ID,
+schema fingerprint, issues, and every required check:
 
-1. Establish a fixed evidence baseline for the pass. Compare the Draft with the approved Brief,
-   current top SERP pages, schema, links, media, Site Context, and byline samples.
-2. Produce evidence-linked breakdown dimensions and suggestions. Preserve source-aligned suggestion
-   fields: `id`, `type`, `title`, `description`, nullable proposed `content`, `autoApplyable`,
-   priority, observation IDs, decision, and dismissal reason.
-3. Prioritize missing topics, unsupported/thin sections, heading hierarchy, metadata, and verified
-   links. Treat word count contextually. Reject keyword stuffing, competitor imitation, unsupported
-   expansion, and voice damage.
-4. Apply coherent blocking/high-impact changes through `dineway content update --draft --rev
-<current-revision>`. Every material pass creates a newer native Draft Revision. Refresh the Job
-   target and evidence before rescoring.
-5. Re-score the complete Draft after each pass, record exact Draft Revision and observation IDs in
-   `scoreHistory`, and stop after three broad passes. Do not chase 100.
-6. Evaluate mandatory gates separately: `schemaValid`, `identityUnique`, `requiredMediaValid`,
-   `accessibilityValid`, `sourceProvenanceValid`, and `rulesResolved`. A score cannot override one.
+- exact Draft identity and unique content identity;
+- schema and Research/Brief coverage;
+- persisted evidence lineage;
+- heading/section structure;
+- SEO metadata and canonical/robots data;
+- internal links and media references;
+- accessibility metadata and structured data;
+- unresolved rules; and
+- final scores.
 
-## Interpretation
+Each check records `passed`, an actionable message only when failed, and persisted Observation IDs.
+The report is the only QA authority consumed by Optimization and derived Quality Attestation. Do not
+submit separate `mandatoryGates` or an `artifactRef` inside the payload.
 
-- 80-100: excellent; minor tweaks only.
-- 70-79: good and competitive.
-- 50-69: important gaps remain.
-- 30-49: major revision or a fresh Brief may be needed.
-- 0-29: not competitive against the selected evidence set.
-- `null`: unmeasured.
-
-Use stricter active policy targets for high-value/competitive work, while treating 70 as the normal
-minimum guidance. Optimize selectively; readability and evidence remain primary.
+Do not open a browser, take screenshots, inspect lazy loading, test responsive/viewport layout,
+evaluate visual rendering, or test interactive behavior. There is no browser fallback in this
+article-content workflow.
 
 ## Stage completion
 
-Write `.dineway/content/runs/<run-id>/jobs/<job-id>/optimize/report.json`. Return its canonical
-content plus a typed payload with Content Score fields, dimensions, suggestions, applied suggestion
-IDs, mandatory gates, score history, artifact ref, collection/content/Draft Revision, content
-fingerprint, observations, source times, provenance, and any bounded raw artifact reference.
+Write `.dineway/content/runs/<run-id>/jobs/<job-id>/optimize/report.json`. Return its canonical content
+plus the typed Optimization payload: scores, dimensions, suggestions and decisions, score history,
+and the exact-Draft `contentQa` report. Return the union of all persisted Observation IDs, source
+times, provenance, and only bounded raw evidence when necessary.
 
 Return to `dineway-content-pipeline`, which refreshes the exact CMS Draft and calls
-`content_pipeline_stage_complete`. That transaction derives the receipt, creates and accepts the
-immutable Optimization Result, and routes to optional deep GEO or derived Attestation. Do not call
-granular Result operations, attest quality, approve, schedule, or publish here.
+`content_pipeline_stage_complete`. That transaction validates the report identity and lineage,
+derives the artifact receipt, creates and accepts Optimization, and routes to optional deep GEO or
+derived Attestation. Do not call granular Result operations, attest quality, approve, schedule, or
+publish here.

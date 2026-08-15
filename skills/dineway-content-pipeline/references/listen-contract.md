@@ -21,11 +21,11 @@ observations merely to make one combined object.
 | Input                            | Acquisition owner                                                                                                                                    | Observation kind       | Default validity | Missing or failed behavior                                                                                                |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Visitor question aggregates      | Owning Dineway NLWeb/Chat subsystem                                                                                                                  | `first_party_question` | 7 days           | Record `not_configured` until the owner exposes a queryable aggregate contract; never add a second raw-conversation store |
-| First-party pages and link graph | `dineway seo crawl local`; Browser Use only for rendering fallback                                                                                   | `local_crawl`          | 24 hours         | Record the actual failure state with an empty payload                                                                     |
+| First-party pages and link graph | Native inventory plus bounded `dineway seo crawl local`                                                                                              | `local_crawl`          | 24 hours         | Record the actual failure state with an empty payload                                                                     |
 | Search performance               | User-owned Google connector/account                                                                                                                  | `gsc`                  | 48 hours         | Record `not_configured`, `permission_denied`, or `temporarily_unavailable`; do not route credentials through Forgeway     |
-| Live Google results              | Local Browse when bounded; Forgeway for managed or infrastructure-scale evidence                                                                     | `google_serp`          | 24 hours         | Suppress only conclusions that require current SERP evidence                                                              |
-| Keyword metrics                  | Forgeway when managed API-key data is needed                                                                                                         | `keyword_evidence`     | 7 days           | Keep demand values unknown rather than zero                                                                               |
-| Competitor page evidence         | Bounded Browse/local collection or Forgeway extraction                                                                                               | `competitor_page`      | 7 days           | Preserve the failed URL/source and continue with available competitors                                                    |
+| Live Google results              | Dineway Tools DataForSEO organic SERP                                                                                                                 | `google_serp`          | 24 hours         | Suppress only conclusions that require current SERP evidence                                                              |
+| Keyword metrics                  | Dineway Tools DataForSEO keyword metrics                                                                                                              | `keyword_evidence`     | 7 days           | Keep demand values unknown rather than zero                                                                               |
+| Competitor page evidence         | Dineway Tools DataForSEO SERP structure plus bounded Firecrawl extraction                                                                             | `competitor_page`      | 7 days           | Preserve the failed URL/source and continue with available competitors                                                    |
 | AI answers and citations         | `dineway-content-ai-visibility` through Browser Use or the user's ChatGPT, Perplexity, Claude, Gemini, Google AI Overviews, Grok, or DeepSeek access | matching engine kind   | 24 hours         | Record each engine independently; one unavailable engine does not suppress the others                                     |
 
 The active versioned workflow policy may shorten these windows. It must not silently extend an
@@ -47,15 +47,17 @@ observation after `validUntil`.
 
 1. Read the native Site Briefing and narrower native state.
 2. Request a source snapshot with the sources required for this opportunity or monitoring pass.
-3. Collect missing or expired evidence in the order: first party, user owned, bounded local/Browse,
-   then Forgeway managed evidence.
+3. For a content Research Job, start Dineway Tools organic SERP as the first evidence operation,
+   then collect the remaining full Research bundle concurrently. For other Listen work, collect
+   missing or expired evidence in the order required by its specialist contract.
 4. Record one immutable observation per source contribution. Use stable dedupe keys, bounded raw
    artifact references, normalized UTC collection times, explicit validity, and empty payloads for
    unavailable states.
 5. Request the source snapshot again at the same decision time. Any remaining `not_observed` source
    is an unresolved evidence gap, not implicit availability.
-6. In a Research Job, write `runs/<run-id>/jobs/<job-id>/research/evidence.json` with source
-   availability and returned observation IDs.
+6. In a Research Job, return one typed Research payload with source availability and returned
+   Observation IDs. Stage Complete deterministically renders `research/evidence.json` and
+   `research/findings.md` and derives their receipts.
 7. The Agent may recommend a deduplicated opportunity and explain a score only from linked
    observations. Record Impact, Inverse Effort, Speed, and Strategic Value with explicit
    availability/confidence, then record the opportunity score snapshot after the rationale artifact

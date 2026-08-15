@@ -1,66 +1,78 @@
 ---
 name: dineway-content-research
-description: Build and persist source-attributed Dineway content research. Use for general, topic, competitor, gap, or SERP research; keywords, live results, evidence, content gaps, competitor structures, topic directions, subtopics, and keyword clusters before a Brief.
+description: Build a complete SERP-first, source-attributed Dineway Research Result for any content Research type before Brief.
 ---
 
 # Dineway Content Research
 
-Execute one Research Stage that the master Pipeline already began, then return canonical artifacts
-and the typed payload to `dineway-content-pipeline`. Native Stage Complete creates the authoritative
-immutable Research Result; `evidence.json` and `findings.md` remain inspectable working artifacts.
+Execute one Research Stage that the master Pipeline already began. Return one normalized Research
+payload to `dineway-content-pipeline`. The typed Result is authoritative; Stage Complete renders the
+canonical evidence JSON and findings Markdown and derives their receipts.
 
-## Inputs
+## Required inputs
 
 - Pipeline Run, Research Job, active Assignment/Attempt, objective, locale/market, and site identity.
 - Research type: `general`, `topic`, `competitor`, `gap`, or `serp`.
-- Query, optional depth, language, country, competitor domains, audience, objective, and focus.
+- Query plus required audience, objective, and focus.
 - Site Briefing, Site Context, schema, published inventory, byline context, prior observations, and
   explicit first-party-question availability.
+- The `dineway-tools` and `dineway-seo-providers` contracts for provider discovery and execution.
 
-## Evidence order
+Every Research type uses the full bundle below. A specialized type changes emphasis; it never skips
+SERP, keyword metrics, competitors, questions, official sources, Site Context, or first-party
+inventory.
 
-1. Native Dineway content, Site Context, published pages, and available first-party questions.
-2. User-owned GSC or analytics through the user's local authenticated connector.
-3. Bounded local crawl and Browser Use for site, competitor, SERP, and AI-answer evidence.
-4. Forgeway DataForSEO/Firecrawl only for managed-key or infrastructure-heavy acquisition.
+## Mandatory SERP-first evidence order
 
-Never place credentials, cookies, private exports, or unbounded page bodies in artifacts. Record
-unavailable sources explicitly; a missing metric is `null`, not zero.
+1. Use Dineway Tools `discover -> inspect -> run -> poll` to start bounded DataForSEO organic SERP
+   analysis. This must be the first evidence operation. Record provider, availability, start/end time,
+   requested/returned counts, limitations, task identity in bounded raw evidence, and Observation IDs.
+2. Only after the SERP request has started, collect the remaining independent areas concurrently:
+   - DataForSEO numeric keyword volume, difficulty score (0-100), CPC, and intent;
+   - DataForSEO SERP competitors, ranks, word counts, headings, and relevant questions;
+   - Firecrawl bounded competitor and official-source pages;
+   - native Site Context, published inventory, internal-link candidates, and user-owned signals.
+3. Do not guess provider endpoints. Preserve the inspected operation, billing/cache status, and
+   limitations. Do not place credentials, cookies, or unbounded page bodies in prompts or Results.
+4. If a provider is unavailable, record the attempted coverage as `not_configured`,
+   `temporarily_unavailable`, `permission_denied`, or `unsupported`. Returned count must be zero and
+   unavailable numeric values remain `null`, never zero.
 
-## Workflow
+Do not use Browser Use, screenshots, or free-form browsing for this workflow.
 
-1. Restate the research question, type, audience, locale, objective, focus, and completion criteria.
-2. Collect and normalize source records with URL, title, snippet, domain, collected time,
-   availability, observation ID, and bounded raw artifact reference.
-3. Produce source-aligned findings with title, content, 0-1 relevance when measurable, and source
-   URLs.
-4. For general research, collect:
-   - keywords with search volume, `Low|Medium|High` difficulty, CPC, intent, category, and evidence;
-   - SERP results with URL, title, domain, rank, word count, site/competitor flags, and headings;
-   - evidence items classified as `stat`, `fact`, or `quote` with attribution;
-   - content gaps with high/medium/low impact and competitor count.
-5. For competitor research, retain competitor domain, URL, title, rank, word count, headings, and
-   observation IDs. Use `dineway-content-competition` for deeper gap judgment.
-6. For topic research, retain topic directions with angle/difficulty, subtopics with relevance and
-   search volume, and keyword clusters with total volume.
-7. Identify current search/visitor intent, risky claims, differentiation, and internal-link
-   candidates in `findings.md`; do not add non-contract fields to normalized JSON when raw evidence
-   can preserve them losslessly.
+## Research payload
 
-## Artifacts and Stage completion
+Produce:
 
-Write:
+- `scope`: self-contained audience, objective, and focus;
+- `coverage`: required `serp`, `keywordMetrics`, `competitors`, `questions`, `officialSources`,
+  `siteContext`, and `firstPartyInventory` records;
+- findings with stable IDs, relevance, and Observation lineage;
+- normalized sources with source kind, primary/secondary/community authority, URL/domain,
+  availability, collected time, and Observation IDs;
+- keywords with numeric volume, 0-100 difficulty, CPC, intent, category, and Observation IDs;
+- organic SERP results with rank, word count, headings, own-site/competitor flags, and Observation IDs;
+- relevant and rejected questions. Rejected questions remain in Research with a reason and cannot flow
+  into Brief;
+- facts bound to normalized sources, content gaps, and competitors, all with Observation lineage;
+- topic directions with numeric difficulty plus evidence-linked subtopics and keyword clusters.
 
-- `.dineway/content/runs/<run-id>/jobs/<job-id>/research/evidence.json`
-- `.dineway/content/runs/<run-id>/jobs/<job-id>/research/findings.md`
+Every available source-derived keyword, SERP result, question, fact, gap, competitor, subtopic, and
+cluster must cite persisted Observation IDs. Do not fabricate an ID or submit evidence that has not
+been recorded natively.
 
-Return both artifact contents plus a typed payload containing `query`, `researchType`, nullable
-`depth`, language, country, nullable summary, findings, sources, keywords, SERP results, evidence,
-content gaps, competitors, topic directions, subtopics, keyword clusters, and both artifact refs.
-Also return strict provenance, source timestamps, observation IDs, and any bounded raw artifact
-reference. Do not calculate artifact hashes or byte counts.
+## Stage completion
 
-The master calls `content_pipeline_stage_complete`, which derives receipts, finishes the native
-Attempt and Assignment, creates the immutable Research Result, and accepts it only when at least one
-available timestamped attributed source and matching evidence are present. Do not call granular
-Result or acceptance operations or create a Brief, Draft, or CMS mutation from this Skill.
+Return the typed payload, strict provenance, source timestamps, the union of Observation IDs, and only
+bounded raw evidence/raw artifact references when needed. Do not build `artifactRefs`, Result
+envelopes, Markdown/JSON wrappers, hashes, or byte counts.
+
+The master calls `content_pipeline_stage_complete`. It validates SERP-first ordering and coverage,
+renders:
+
+- `.dineway/content/runs/<run-id>/jobs/<job-id>/research/evidence.json`; and
+- `.dineway/content/runs/<run-id>/jobs/<job-id>/research/findings.md`.
+
+The same transaction derives receipts, verifies every Observation exists, finishes the Attempt and
+Assignment, creates schema-version-2 Research, and accepts it. Do not call granular Result/accept
+operations or create a Brief, Draft, or CMS mutation from this Skill.

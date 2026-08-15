@@ -51,13 +51,18 @@ availability invalidates a key conclusion. Invalidate later stages when their in
 - Require an authenticated human to confirm the Brief inside Brief Stage Complete; that same
   transaction creates and accepts the immutable Brief Result before Writer starts.
 - Store generated output immediately as a native Draft after Writer structural validation.
-- Require accepted Optimization and any policy-required deep GEO Result to reference that exact
-  current Draft Revision before quality attestation.
+- Require accepted Optimization with one canonical native `contentQa` report, and any
+  policy-required deep GEO Result, to reference that exact current Draft Revision before quality
+  attestation. Derive mandatory gates from the report; never accept a second caller-built gate set.
 - Bind editorial approval to the exact Draft Revision and Live base.
 - Bind release authorization to the approved Draft, operation, schedule time, timezone, actor, and
   active capacity policy.
-- Treat unresolved rule conflicts, unavailable required evidence, missing media/accessibility data,
-  stale native state, and exhausted capacity as blocking.
+- Determine Pipeline quality applicability from accepted Writer provenance, never from API/token/UI
+  caller identity. No accepted Writer Result means the Quality Policy is not applicable.
+- Report missing or stale Pipeline quality evidence as an exact-Draft warning. Only an authenticated
+  human session may explicitly confirm its exact fingerprint; token actors must resolve it.
+- Treat unresolved Core authorization, exact-Draft Review, stale native identity, and exhausted
+  capacity as blocking. Invalid evidence and media still prevent agents from deriving an Attestation.
 
 ## Monitor and Fix
 

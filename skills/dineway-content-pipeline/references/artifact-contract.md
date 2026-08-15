@@ -64,10 +64,12 @@ next action only for authoritative recovery or a corrupt/missing local cache art
 
 ## Stage Complete and Result receipts
 
-Pass canonical artifact content to `content_pipeline_stage_complete`. The server derives the
-artifact reference, SHA-256, UTF-8 byte count, provenance receipt, immutable typed Result,
-acceptance state, and next action in one boundary. Callers must not precompute or duplicate these
-fields in `evidence.json`, a Result envelope, or a separate wrapper.
+Pass a typed stage payload to `content_pipeline_stage_complete`. For Research and Brief, the server
+first renders the canonical artifacts from that validated payload. For other stages, pass canonical
+artifact content with the typed payload. The server derives the artifact reference, SHA-256, UTF-8
+byte count, provenance receipt, immutable typed Result, acceptance state, and next action in one
+boundary. Callers must not precompute or duplicate these fields in `evidence.json`, a Result
+envelope, or a separate wrapper.
 
 Store the returned Result object unchanged as `jobs/<job-id>/result-receipt.json` when a local cache
 is useful. It is replaceable from native status. Never edit it to make local state appear current.
@@ -81,10 +83,23 @@ Canonical stage artifacts are:
 - optional deep GEO: `geo/report.json`; and
 - optional stages: their typed Result artifacts.
 
-Research evidence preserves sources, availability, timestamps, observations, claims, metrics, and
-bounded raw references. Missing metrics remain `null`; unavailable sources are explicit. The Draft
-receipt contains native identity, never a second article body. Optimization includes exact Draft
-identity, suggestion decisions, score history, Preview QA gates, and evidence IDs.
+Research is a full SERP-first bundle for every Research type. It preserves required coverage,
+normalized sources, availability, timestamps, persisted observations, facts, numeric keyword
+metrics, search intent, SERP competitors, relevant/rejected questions, gaps, topic directions,
+subtopics, clusters, and bounded lineage. Missing metrics remain `null`; unavailable sources are
+explicit. The server deterministically projects `research/evidence.json` and
+`research/findings.md`; callers never submit those wrappers.
+
+Brief preserves the accepted Research Result and evidence in one Writer-ready structure:
+primary/secondary keywords and intent, audience/voice/guardrails, internal links and media intent,
+CMS binding, and an ordered outline with direct answer, at-a-glance, one section per subject,
+methodology, optional approved-question FAQ, CTA, Observation-linked key points, and bounded word
+budgets. The server deterministically projects `brief/brief.md`; callers never submit its wrapper.
+
+The Draft receipt contains native identity, never a second article body. Optimization includes
+exact Draft identity, suggestion decisions, score history, one native content-QA report, and
+evidence IDs. Content QA never includes browser, screenshot, lazy-loading, responsive-layout, or
+interaction/rendering checks.
 
 ## Identity and invalidation
 

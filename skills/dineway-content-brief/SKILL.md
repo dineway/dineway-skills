@@ -1,56 +1,65 @@
 ---
 name: dineway-content-brief
-description: Create an evidence-backed Dineway content Brief from an accepted Research Result. Use for source-aligned outlines, target keywords, search intent, questions, unique angles, audience context, topic guardrails, internal links, image plans, and a human-approved handoff to Writer.
+description: Convert an accepted Dineway Research Result into one Writer-ready, evidence-linked Brief Result with human approval.
 ---
 
 # Dineway Content Brief
 
-Execute one Brief Stage from the accepted Research Result after the master Pipeline has begun it.
-Return the canonical Brief artifact and typed payload, then stop for authenticated-human Stage
-completion before Writer may start.
+Execute one Brief Stage that the master Pipeline already began. Use only the accepted Research
+Result as evidence authority. Return one structured Brief payload; Stage Complete renders the
+canonical Markdown and derives its receipt.
 
 ## Required inputs
 
-- Current Run, Brief Job, Assignment, Attempt, and exact accepted Research Result ID/version.
-- Research `evidence.json` and `findings.md` only as derived aids; native Result is authoritative.
-- Site Briefing, Site Context, byline, locale/market, current schema, native content identity for
-  refresh work, and applicable template/playbook context.
-- Load `../dineway-seo/references/content-brief.md`, `apply-loop.md`,
-  `security-boundaries.md`, and provider/schema references only when relevant.
+- Current Run, Brief Job, active Assignment/Attempt, and exact accepted Research Result ID/version.
+- Accepted Research payload, plus its derived `evidence.json` and `findings.md` only as readable
+  projections.
+- Native collection/content identity, locale/market, byline, current schema fingerprint, Site
+  Briefing, Site Context, applicable template, and public content inventory.
 
-Stop if the Research selection changed, source freshness expired, or local Research artifacts do not
-match the accepted Result provenance.
+Stop if the accepted Research selection changed, required evidence expired, or native provenance
+does not match the derived Research projections. Do not rerun hidden research inside Brief.
 
-## Workflow
+## Writer-ready Brief
 
-1. Preserve Research topic, target keywords, intent, market, audience, evidence, competitor gaps,
-   and unique differentiation. Do not rerun hidden research inside Brief.
-2. Choose `blog`, `guide`, `landing`, `product`, `comparison`, or `listicle`. Record a target word
-   count from 500-10000 only when evidence supports it; otherwise use `null`.
-3. Build at most 50 outline sections. Each section uses the source-aligned fields `heading`, level
-   1-4, `keyPoints`, nonnegative `suggestedWordCount`, `generationMode` (`ai` or `manual`), and
-   evidence observation IDs.
-4. Record competitor URLs, nullable notes, questions to answer, unique angle, target language and
-   country, authority source, and relevant blog/guide format.
-5. Record audience role, expertise (`beginner`, `intermediate`, `expert`), pain point, funnel stage
-   (`awareness`, `consideration`, `decision`), and required/excluded topic guardrails.
-6. Add verified internal links by stable public URL/native identity and an image plan by purpose,
-   placement, dimensions, provenance, alt-text intent, caption need, and schema field.
-7. Distinguish required scope, optional ideas, risky claims, and exclusions. Never invent menu,
-   hours, pricing, allergen, award, review, staff, medical, legal, or financial facts.
+1. Preserve Research topic, market, audience, objective, keyword metrics, intent, relevant
+   questions, competitor gaps, and evidence lineage.
+2. Choose exactly one primary target keyword. Secondary keywords preserve their Research metrics,
+   intent, category, and Observation IDs. Record primary and secondary search intent explicitly.
+3. Define audience role, expertise, pain point, funnel stage, voice, objective, unique angle,
+   subjects, required topics, exclusions, and risky-claim guardrails.
+4. Produce a single ordered outline with these required section types:
+   - exactly one `direct_answer`;
+   - exactly one `at_a_glance`;
+   - one `subject` section per declared subject, grouped under `subject_sections`;
+   - exactly one `methodology`;
+   - optional `faq` using only Research questions marked `included` and `includeInFaq=true`; and
+   - exactly one `cta`.
+5. Give every section a stable ID, heading, level, format, required key points, evidence Observation
+   IDs, question bindings, and word budget. Required key points must have Observation
+   lineage. Section budgets must total within ten percent of the target word count.
+6. Carry only approved Research questions. Rejected questions retain their reason in Research and
+   cannot enter Brief, the outline, or FAQ.
+7. Add verified internal-link candidates by stable public URL plus media purpose, alt-text intent,
+   optional generation prompt, and whether each item is required.
+8. Bind the Brief to the exact Research Result, collection, optional existing content ID,
+   translation group, locale, byline, and schema fingerprint.
 
-## Artifact and Stage completion
+Never invent menu, hours, price, allergen, award, review, staff, medical, legal, or financial facts.
+Do not hide optional ideas among required scope.
 
-Write `.dineway/content/runs/<run-id>/jobs/<job-id>/brief/brief.md`. Bind it to the Run, Job,
-Research Result ID/version, collection, locale, byline, optional existing content ID/translation
-group, and schema fingerprint.
+## Stage completion
 
-Return a typed payload containing the exact Research Result reference, topic, keywords, content
-type, nullable intent/word count, objective, outline, competitor URLs, notes, questions, unique
-angle, market fields, authority/format fields, audience context, guardrails, internal links, image
-plan, artifact ref, provenance, and observations.
+Return only the typed Brief payload, provenance, source timestamps, and the union of persisted
+Observation IDs. Do not build an `artifactRef`, Result envelope, Markdown wrapper, hash, byte count,
+or acceptance write.
 
-An authenticated human reviews the artifact and calls `content_pipeline_stage_complete` with
-`briefApproval.confirmed=true`. That transaction derives the artifact receipt, creates and accepts
-the immutable Brief Result, and returns `begin_writer`. API-token and system actors are rejected.
-Do not call granular Result/accept operations or write a CMS Draft from this Skill.
+An authenticated human reviews the structured Brief and calls `content_pipeline_stage_complete`
+with `briefApproval.confirmed=true`. API-token and system actors cannot approve it. The transaction
+validates Research inheritance and outline completeness, renders:
+
+- `.dineway/content/runs/<run-id>/jobs/<job-id>/brief/brief.md`;
+
+then derives its receipt, verifies every Observation, creates schema-version-2 Brief, accepts it,
+and returns `begin_writer`. Do not call granular Result/accept operations or mutate a CMS Draft from
+this Skill.
