@@ -18,7 +18,7 @@ If you are a restaurant owner or a local business owner, **you don't need to wri
 To give your AI agent the abilities to build your website, run this command in your terminal:
 
 ```bash
-npx skills add https://github.com/dineway/dineway-skills
+npx skills add dineway/dineway-skills
 ```
 
 Once installed, simply tell the agent:
