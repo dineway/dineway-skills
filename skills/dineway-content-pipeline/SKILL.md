@@ -19,10 +19,10 @@ Read `references/performance-benchmark.md` when measuring or reporting Pipeline 
 ## Invariants
 
 - Run exactly one `content_pipeline_capabilities_get` preflight before the first mutation (CLI:
-  `dineway pipeline capabilities`). Proceed only when protocol version 2, Result contract version 2,
-  all three Stage operations, connection readiness, and actor write readiness are present. If the
-  tool is missing, upgrade the Pipeline plugin. If `ready=false`, perform only the returned action.
-  Do not retry diagnosis and do not fall back to granular lifecycle writes.
+  `dineway pipeline capabilities`). Proceed only when compact Context, batch Observations, Run Start,
+  Stage Begin/Complete, Draft assembly, atomic quality completion, connection readiness, and actor
+  write readiness are present. If `ready=false`, perform only the returned action. Do not retry
+  diagnosis and do not fall back to granular lifecycle writes.
 - Start or explicitly resume the native Run before Research creates its first artifact.
 - Follow `content_pipeline_status_get.currentStage` and `.nextAction`; do not rebuild normal routing
   from local files.
@@ -42,11 +42,13 @@ Read `references/performance-benchmark.md` when measuring or reporting Pipeline 
 ## Entry and recovery
 
 1. Run the single capability and authentication preflight above.
-2. Read the Site Briefing, Site Context, schema, bylines, current content identity, active Pipeline
-   policies, and `content_pipeline_agent_wake_plan_get`.
-3. Call `content_pipeline_run_start` immediately. Pass `runId` only to resume an explicitly known
+2. Call `content_pipeline_run_start` immediately. Pass `runId` only to resume an explicitly known
    compatible Run; never coalesce work by title or objective.
-4. Call `content_pipeline_status_get` only for explicit resume or recovery. If it reports Handoff,
+3. Call `content_pipeline_context_get` once. Use its bounded content identity, schema fingerprint and
+   fields, Site Briefing entries, valid Observation summaries, accepted Result receipts, and wake
+   action. Do not rediscover these through separate status, schema, policy, and identity reads.
+4. Call `content_pipeline_status_get` only for explicit resume or recovery, using the default summary
+   response. Request `full` only for diagnosis. If it reports Handoff,
    failed/blocked work, Draft drift, or overdue capacity, resolve that state before normal production.
 5. Only for explicit recovery or Handoff, cache the native status plus current CMS content and
    release-readiness response in `.dineway/content/runs/<run-id>/native-state.json`, then run:
@@ -74,7 +76,8 @@ Each Begin atomically creates or reuses the compatible Job, active Assignment, a
 Do specialist work outside the transaction. Each Complete atomically validates the typed payload,
 derives SHA-256/UTF-8 byte receipts from canonical artifacts, records immutable provenance and
 observations, finishes the Attempt and Assignment, applies acceptance policy, and returns the next
-action. Never hand-build a Result envelope, byte count, hash, or acceptance write.
+action. Each Complete validates the stage's compact decisions, source, assessment, or optional typed
+artifact input. Never hand-build a Result envelope, byte count, hash, or acceptance write.
 
 ### Research
 
@@ -82,36 +85,39 @@ Call `content_pipeline_stage_begin` with stage `research` before collecting evid
 `dineway-content-research`. For every Research type, use Dineway Tools to start organic SERP
 analysis as the first evidence operation; only after it starts may keyword metrics, competitors,
 questions, official sources, Site Context, and first-party inventory run concurrently. Record
-explicit availability, numeric metrics or `null`, bounded lineage, and persisted Observation IDs.
-Complete with the typed Research payload and source timestamps only. The Complete boundary
-validates SERP-first ordering, renders canonical `research/evidence.json` and
+explicit availability, numeric metrics or `null`, and bounded lineage in one idempotent Observation
+batch. Complete with compact editorial decisions and the selected Observation IDs. The server
+hydrates authoritative evidence, validates SERP-first ordering, compiles the canonical Research
+Result, renders `research/evidence.json` and
 `research/findings.md`, derives both receipts, and accepts Research. Do not perform free-form
-browser research or send caller-built artifact wrappers.
+browser research or send caller-built Result/artifact wrappers.
 
 ### Brief
 
-Begin `brief`; native state resolves and binds the latest accepted Research Result version. Run
-`dineway-content-brief` using the accepted Research Result as the only evidence authority. Return
-one Writer-ready Brief: structured keywords/intents, audience and voice, guardrails, internal
-links/media intent, CMS binding, and an ordered evidence-linked outline with direct answer,
-at-a-glance, subject, methodology, optional approved-question FAQ, and CTA sections. Complete with
-the typed payload only; the transaction renders `brief/brief.md` and derives its receipt. Brief
+Begin `brief`; native state resolves and binds the latest accepted Research Result. Run
+`dineway-content-brief` using that Result as the only evidence authority. Return only editorial
+selections: target keyword, audience/voice choices, required topics/guardrails, internal-link and
+media choices, approved questions, and the ordered outline. The server copies metrics, evidence,
+identity, locale, schema, and upstream bindings from authoritative state, compiles the Writer-ready
+Brief, renders `brief/brief.md`, and derives its receipt. Brief
 acceptance is the single human governance decision in this lifecycle: an authenticated human must
 complete or replay the stage with `briefApproval.confirmed=true`. API-token and system actors cannot
 approve it. Do not start Writer until native status returns `begin_writer`.
 
 ### Writer
 
-Begin `writer` with the target identity; native state resolves and binds the accepted Brief version.
-Run `dineway-content-writer`. After structural validation, create or update the native CMS Draft
-once. Complete with the CMS Draft receipt artifact and a Draft Result containing collection, content
-ID, exact Draft Revision ID, revision token, and schema fingerprint. Refresh CMS state before
-Complete.
+Begin `writer` with the target identity; native state resolves and binds the accepted Brief. Run
+`dineway-content-writer` and write one schema-aware source object with ordered sections/cards, final
+copy, media IDs, and required accessibility metadata such as `imageAlt`. With CLI, pass it through
+`dineway pipeline stages complete --source-file <path>`; the CLI reads the file locally and submits
+its object. The Dineway backend validates the database-owned schema and media, assembles canonical
+CMS JSON deterministically, writes one Draft Revision, derives the content fingerprint, creates the
+Writer Result, and returns only a compact receipt. Do not call CMS create/update separately.
 
 ### Optimization and content QA
 
-Begin `optimization` against the exact Writer Draft. Run `dineway-content-optimize`; evidence-linked
-edits may create newer Draft Revisions. Perform one complete content QA on the final exact Draft:
+Begin `optimization` against the exact Writer Draft. Run `dineway-content-optimize` as an audit by
+default. Perform one complete content QA on that exact Draft:
 
 - schema and identity;
 - Brief coverage, heading structure, and required media/accessibility metadata;
@@ -122,25 +128,19 @@ edits may create newer Draft Revisions. Perform one complete content QA on the f
 This is content and governance QA through CLI, MCP, or native interfaces. Do not open a browser,
 take screenshots, inspect lazy loading, test responsive layout, or perform interaction/rendering QA.
 
-Complete Optimization once with the final report, suggestion decisions, score history, canonical
-`contentQa`, and exact current Draft identity. Quality Attestation derives mandatory gates from the
-report. If `deepGeoEnabled` is true, run a separate
-`geo_optimization` Begin/Complete against the same Draft; otherwise proceed directly to Attestation.
+Complete with the compact assessment. When every mandatory check passes, do not submit content and
+do not create another Draft. If blocking findings require content changes, include one consolidated
+`remediationSource`; the backend permits one newer Draft and records the Writer source Draft → final
+Draft lineage without a Writer rebind. If `deepGeoEnabled` is true, run a separate
+`geo_optimization` Begin/Complete against the final Draft.
 
-## Derived Quality Attestation
+## Atomic final-quality boundary
 
-Call `content_pipeline_quality_attestation_derive` after Optimization and optional deep GEO are
-accepted. Supply only:
-
-- Run ID;
-- collection and content ID;
-- additional non-derivable QA observation IDs; and
-- an idempotency key.
-
-The service derives the current Draft Revision, Schema fingerprint, active policy version, accepted
-Research/Brief/Writer/Optimization and optional GEO Result IDs, canonical artifact fingerprints,
-media IDs, mandatory gates, scores, and Result observation lineage. Never submit those stable
-bindings manually. A Draft, Schema, policy, accepted Result, media, or evidence change invalidates
+The final Optimization Complete—or optional deep-GEO Complete—preflights current Draft identity,
+schema, accepted upstream Results, explicit source/final lineage, media, evidence, scores, gates, and
+server-derived fingerprint. It commits Result acceptance and Quality Attestation in one transaction
+or commits neither, then returns `inspect_release_readiness`. There is no separate Agent Attestation
+mutation. A later Draft, Schema, policy, accepted Result, media, or evidence change still invalidates
 the Attestation fail-closed.
 
 ## Release readiness, Review, and publish
@@ -204,8 +204,8 @@ requires it. Report:
 - accepted Results and exact Draft/Live Revision;
 - Content-ready, Review-ready, benchmark-complete, optional publication, human wait, tool execution,
   Agent reasoning, orchestration, and QA timing;
-- lifecycle writes, external calls, retries, context compactions, legacy fallbacks, and browser-QA
-  calls;
+- lifecycle writes, Agent-to-tool round trips, total tool-output bytes, retries, context compactions,
+  rebinding Jobs, late Attestation failures, and browser-QA calls;
 - all remaining readiness blockers and human decisions;
 - source unavailability; and
 - native next action.

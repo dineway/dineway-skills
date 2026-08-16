@@ -22,7 +22,7 @@ explicitly enables deep GEO.
 
 Stop on stale Assignment, changed Research/Brief selection, schema drift, or Draft drift.
 
-## Consolidated optimization pass
+## Consolidated audit and optional remediation
 
 1. Establish one fixed evidence baseline from the approved Brief, current SERP evidence, schema,
    links, media, Site Context, and byline samples.
@@ -31,10 +31,11 @@ Stop on stale Assignment, changed Research/Brief selection, schema drift, or Dra
    reason.
 3. Prioritize missing topics, unsupported/thin sections, heading hierarchy, metadata, verified links,
    and voice. Reject keyword stuffing, competitor imitation, unsupported expansion, and voice damage.
-4. Apply all coherent blocking/high-impact changes in one update through `dineway content update
-   --draft --rev <current-revision>`. Refresh the exact Draft identity once after the update.
-5. Re-score the complete final Draft. Run another edit pass only when the canonical QA report leaves a
-   mandatory content or governance check failed; never chase 100.
+4. Audit only by default. When the current Draft passes mandatory checks, do not submit content and
+   do not write CMS.
+5. When blocking findings require changes, produce one consolidated `remediationSource` using the
+   Writer source contract. The backend may create exactly one final Draft Revision and records its
+   lineage from the Writer source Draft. Do not patch cards or accessibility fields one by one.
 
 ## Score contract
 
@@ -44,13 +45,12 @@ Stop on stale Assignment, changed Research/Brief selection, schema drift, or Dra
 - `score` is `round((seoScore + geoScore) / 2)` when both are measured, the measured side when only
   one is available, and `null` when neither is available.
 - `scoreCoverage` is the measured component count divided by two.
-- Use `scoreBasisVersion: dineway-content-score-v1`; the Pipeline rejects mismatches.
 - Preserve unavailable values as `null`, never zero.
 
 ## Canonical content QA
 
 Build exactly one `contentQa` report for the final exact Draft through CLI, MCP, and native
-interfaces. It contains report version, checked time, collection, content ID, Draft Revision ID,
+interfaces. It contains checked time, collection, content ID, Draft Revision ID,
 schema fingerprint, issues, and every required check:
 
 - exact Draft identity and unique content identity;
@@ -73,13 +73,13 @@ article-content workflow.
 
 ## Stage completion
 
-Write `.dineway/content/runs/<run-id>/jobs/<job-id>/optimize/report.json`. Return its canonical content
-plus the typed Optimization payload: scores, dimensions, suggestions and decisions, score history,
-and the exact-Draft `contentQa` report. Return the union of all persisted Observation IDs, source
-times, provenance, and only bounded raw evidence when necessary.
+Return the compact assessment: source Draft ID, dimensions, suggestions/decisions, and the exact-Draft
+content-QA checks. Include `remediationSource` only for the one blocking remediation path. The server
+calculates scores, compiles the canonical Optimization Result/report, derives the final fingerprint,
+and records explicit source/final Draft lineage.
 
 Return to `dineway-content-pipeline`, which refreshes the exact CMS Draft and calls
 `content_pipeline_stage_complete`. That transaction validates the report identity and lineage,
-derives the artifact receipt, creates and accepts Optimization, and routes to optional deep GEO or
-derived Attestation. Do not call granular Result operations, attest quality, approve, schedule, or
-publish here.
+derives the artifact receipt and atomically creates/accepts Optimization plus Quality Attestation
+when this is the final quality stage. It otherwise routes to optional deep GEO. Do not call granular
+Result operations, attest quality separately, approve, schedule, or publish here.

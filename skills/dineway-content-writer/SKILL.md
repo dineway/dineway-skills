@@ -5,9 +5,9 @@ description: Draft or revise schema-valid Dineway content from an approved Brief
 
 # Dineway Content Writer
 
-Produce a schema-valid article from an accepted Brief and write it immediately as a native CMS
-Draft after structural validation. Pipeline stores only the exact Draft identity Result, never a
-second authoritative article body.
+Produce one compact, schema-aware Writer source object from an accepted Brief. The Dineway backend
+validates it and writes the native CMS Draft deterministically. Pipeline stores only the exact Draft
+identity Result, never a second authoritative article body.
 
 ## Required inputs
 
@@ -34,17 +34,16 @@ second authoritative article body.
    transitions natural.
 6. Add internal links only to verified native/public targets. Preserve stable slug/content identity
    for refresh and Fix work.
-7. Represent rich text in the format required by the current schema. Keep media references in the
-   media manifest until native media IDs exist.
-8. After structural validation, call `dineway content create --draft` for new content or `dineway
-content update --draft --rev <current-revision>` for an update/Fix. Save the unchanged CMS
-   response in `.dineway/content/runs/<run-id>/jobs/<job-id>/cms/draft-receipt.json`.
-9. Refresh the CMS item and return the unchanged Draft receipt plus a typed identity payload with
-   only `collection`, `contentId`, exact `draftRevisionId`, revision token, and current
-   `schemaFingerprint`, together with provenance.
-10. Return control to the master Pipeline. It calls `content_pipeline_stage_complete`, which derives
-    the artifact receipt, binds accepted upstream versions, finishes the Attempt/Assignment, and
-    creates the immutable Draft Result atomically.
+7. Emit fields by schema slug plus one ordered body model of sections and cards. Every referenced
+   image must use a native media ID and non-empty `imageAlt`; include accessibility fields before
+   submission, not as an Optimization patch.
+8. Save that source object under the Run Job directory. With CLI, pass it as `--source-file`; the CLI
+   reads and sends the JSON object in the same Stage Complete request. Never send a local path or
+   arbitrary URL to a remote Dineway backend.
+9. Return control to the master Pipeline. It calls `content_pipeline_stage_complete`, which validates
+   schema/media, assembles Portable Text or JSON, creates or updates one Draft Revision, derives
+   schema/content fingerprints, binds accepted upstream Results, and returns a compact Draft receipt
+   atomically.
 
 ## Completion gate
 

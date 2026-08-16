@@ -27,21 +27,17 @@ STANDARD_WRITES = [
 
 def completed_trace() -> dict:
     return {
-        "protocol": {"version": 2, "resultContractVersion": 2},
         "scope": {
             "comparable": True,
-            "comparisonBasis": "workflow_artifacts_fields",
+            "comparisonBasis": "four_stage_article",
             "contentType": "article",
             "locale": "en-SG",
-            "researchContract": "research-v2",
-            "briefContract": "brief-v2",
         },
         "milestones": {
             "requestedAt": "2026-08-13T00:00:00Z",
-            "contentReadyAt": "2026-08-13T00:16:00Z",
-            "reviewReadyAt": "2026-08-13T00:20:00Z",
-            "benchmarkCompletedAt": "2026-08-13T00:23:00Z",
-            "publishedAt": "2026-08-13T00:27:00Z",
+            "qualityGateCompletedAt": "2026-08-13T00:14:00Z",
+            "reviewReadyAt": "2026-08-13T00:18:00Z",
+            "publishedAt": "2026-08-13T00:25:00Z",
         },
         "durationsMs": {
             "humanApprovalWait": 60_000,
@@ -52,11 +48,15 @@ def completed_trace() -> dict:
         },
         "operations": {
             "lifecycleWrites": list(STANDARD_WRITES),
-            "externalCalls": [f"call-{index}" for index in range(42)],
+            "toolRoundTrips": [f"call-{index}" for index in range(42)],
+            "toolOutputBytes": 320_000,
+            "cmsDraftWrites": 1,
+            "writerSourceSubmissions": 1,
             "retries": [],
             "contextCompactions": 0,
-            "legacyFallbacks": [],
             "browserQaCalls": [],
+            "rebindingJobs": [],
+            "lateAttestationFailures": [],
         },
         "jobs": [
             {"job": {"stage": stage, "status": "completed"}}
@@ -66,58 +66,55 @@ def completed_trace() -> dict:
 
 
 class BenchmarkPipelineTraceTest(unittest.TestCase):
-    def test_reports_two_time_gates_and_keeps_publication_separate(self) -> None:
-        result = benchmark_trace(completed_trace(), baseline_review_seconds=18 * 60)
+    def test_reports_quality_gate_and_keeps_review_and_publication_separate(self) -> None:
+        result = benchmark_trace(completed_trace(), baseline_quality_gate_seconds=36 * 60 + 59)
 
-        self.assertEqual(result["contentReadySeconds"], 16 * 60)
-        self.assertEqual(result["reviewReadySeconds"], 20 * 60)
-        self.assertEqual(result["benchmarkSeconds"], 23 * 60)
-        self.assertEqual(result["optionalPublishSeconds"], 27 * 60)
-        self.assertTrue(result["contentReadyTargetMet"])
-        self.assertTrue(result["reviewReadyTargetMet"])
-        self.assertTrue(result["hardCeilingMet"])
+        self.assertEqual(result["qualityGateSeconds"], 14 * 60)
+        self.assertEqual(result["reviewReadySeconds"], 18 * 60)
+        self.assertEqual(result["optionalPublishSeconds"], 25 * 60)
+        self.assertTrue(result["qualityGateTargetMet"])
         self.assertTrue(result["targetMet"])
         self.assertEqual(result["lifecycleWrites"], 9)
-        self.assertEqual(result["externalCalls"], 42)
-        self.assertAlmostEqual(result["reviewReadyReductionPercent"], -11.11, places=2)
+        self.assertEqual(result["toolRoundTrips"], 42)
+        self.assertEqual(result["toolOutputBytes"], 320_000)
+        self.assertAlmostEqual(result["qualityGateReductionPercent"], 62.15, places=2)
 
-    def test_rejects_missing_protocol_scope_milestones_or_standard_stages(self) -> None:
-        for mutation in ("protocol", "scope", "milestone", "stage"):
+    def test_rejects_missing_scope_milestones_or_standard_stages(self) -> None:
+        for mutation in ("scope", "milestone", "stage"):
             trace = completed_trace()
-            if mutation == "protocol":
-                trace["protocol"]["resultContractVersion"] = 1
-            elif mutation == "scope":
+            if mutation == "scope":
                 trace["scope"]["comparable"] = False
             elif mutation == "milestone":
-                del trace["milestones"]["contentReadyAt"]
+                del trace["milestones"]["qualityGateCompletedAt"]
             else:
                 trace["jobs"] = list(reversed(trace["jobs"]))
             with self.subTest(mutation=mutation), self.assertRaises(BenchmarkTraceError):
-                benchmark_trace(trace, baseline_review_seconds=18 * 60)
+                benchmark_trace(trace, baseline_quality_gate_seconds=36 * 60 + 59)
 
     def test_fails_targets_for_time_call_or_forbidden_path_regressions(self) -> None:
         trace = completed_trace()
         trace["milestones"].update(
             {
-                "contentReadyAt": "2026-08-13T00:19:00Z",
+                "qualityGateCompletedAt": "2026-08-13T00:16:00Z",
                 "reviewReadyAt": "2026-08-13T00:23:00Z",
-                "benchmarkCompletedAt": "2026-08-13T00:26:00Z",
             }
         )
-        trace["operations"]["externalCalls"] = [f"call-{index}" for index in range(51)]
+        trace["operations"]["toolRoundTrips"] = [f"call-{index}" for index in range(51)]
+        trace["operations"]["toolOutputBytes"] = 409_601
         trace["operations"]["contextCompactions"] = 1
-        trace["operations"]["legacyFallbacks"] = ["granular_result_record"]
         trace["operations"]["browserQaCalls"] = ["screenshot"]
+        trace["operations"]["rebindingJobs"] = ["writer-rebind"]
+        trace["operations"]["lateAttestationFailures"] = ["missing-fingerprint"]
 
-        result = benchmark_trace(trace, baseline_review_seconds=18 * 60)
+        result = benchmark_trace(trace, baseline_quality_gate_seconds=36 * 60 + 59)
 
-        self.assertFalse(result["contentReadyTargetMet"])
-        self.assertFalse(result["reviewReadyTargetMet"])
-        self.assertFalse(result["hardCeilingMet"])
-        self.assertFalse(result["externalCallBudgetMet"])
+        self.assertFalse(result["qualityGateTargetMet"])
+        self.assertFalse(result["toolRoundTripBudgetMet"])
+        self.assertFalse(result["toolOutputBudgetMet"])
         self.assertFalse(result["noContextCompaction"])
-        self.assertFalse(result["noLegacyFallback"])
         self.assertFalse(result["noBrowserQa"])
+        self.assertFalse(result["noRebindingJobs"])
+        self.assertFalse(result["noLateAttestationFailure"])
         self.assertFalse(result["targetMet"])
 
     def test_rejects_missing_duration_or_structural_operation_evidence(self) -> None:
@@ -128,9 +125,9 @@ class BenchmarkPipelineTraceTest(unittest.TestCase):
             elif mutation == "write":
                 trace["operations"]["lifecycleWrites"].pop()
             else:
-                del trace["operations"]["externalCalls"]
+                del trace["operations"]["toolRoundTrips"]
             with self.subTest(mutation=mutation), self.assertRaises(BenchmarkTraceError):
-                benchmark_trace(trace, baseline_review_seconds=18 * 60)
+                benchmark_trace(trace, baseline_quality_gate_seconds=36 * 60 + 59)
 
 
 if __name__ == "__main__":

@@ -37,26 +37,26 @@ Stop on stale Assignment, Draft drift, missing required input Result, or unverif
 5. Prioritize suggestions as critical, high, medium, or low. Preserve source-aligned fields:
    `id`, `type`, `title`, `description`, optional `content`, `autoApplyable`, evidence IDs,
    apply/dismiss decision, and dismissal reason.
-6. Apply only source-supported improvements. Each material edit uses `dineway content update
---draft --rev <current-revision>` and creates a newer explicit Draft Revision. Refresh the Job
-   target before rescoring; do not mutate a prior Result.
+6. Keep deep GEO audit-only. Record source-supported suggestions against the exact Optimization final
+   Draft, but do not create another Draft Revision at this optional stage.
 7. Stop after three broad passes. Record score history by exact Draft Revision.
 
 ## Stage completion contract
 
 Write `jobs/<job-id>/geo/report.json`, then return its canonical content and a typed payload with:
 
-- `scoreBasisVersion: dineway-deep-geo-v1`, `geoScore`, and `scoreCoverage`;
+- `geoScore` and `scoreCoverage`;
 - the four dimension scores and per-platform scores;
 - citation gaps with query, platform, diagnosis, and observation IDs;
 - suggestions and score history;
-- top-level collection, content ID, current Draft Revision ID, content fingerprint, source times,
+- top-level collection, content ID, unchanged current Draft Revision ID, content fingerprint, source times,
   observation IDs, provenance, and raw artifact reference.
 
 The master calls `content_pipeline_stage_complete`; the Pipeline validator recalculates the
-aggregate, derives the artifact receipt, and creates/accepts the immutable GEO Result atomically. A
-mismatched score or Draft Revision fails. Return to `dineway-content-pipeline`; do not call granular
-Result operations, approve, schedule, or publish.
+aggregate, validates the final Draft chain, derives the artifact receipt, and creates/accepts both
+the immutable GEO Result and final Quality Attestation atomically. A mismatched score or Draft
+Revision fails. Return to `dineway-content-pipeline`; do not call granular Result operations,
+attest separately, approve, schedule, or publish.
 
 ## Interpretation
 

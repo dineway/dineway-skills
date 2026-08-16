@@ -5,9 +5,10 @@ description: Build a complete SERP-first, source-attributed Dineway Research Res
 
 # Dineway Content Research
 
-Execute one Research Stage that the master Pipeline already began. Return one normalized Research
-payload to `dineway-content-pipeline`. The typed Result is authoritative; Stage Complete renders the
-canonical evidence JSON and findings Markdown and derives their receipts.
+Execute one Research Stage that the master Pipeline already began. Batch-record normalized evidence,
+then return compact editorial decisions to `dineway-content-pipeline`. The server hydrates the
+Observations and compiles the authoritative Research Result; Stage Complete renders canonical
+evidence JSON and findings Markdown and derives their receipts.
 
 ## Required inputs
 
@@ -40,9 +41,9 @@ inventory.
 
 Do not use Browser Use, screenshots, or free-form browsing for this workflow.
 
-## Research payload
+## Normalized evidence and decisions
 
-Produce:
+Record the evidence fields below in typed Observation payloads:
 
 - `scope`: self-contained audience, objective, and focus;
 - `coverage`: required `serp`, `keywordMetrics`, `competitors`, `questions`, `officialSources`,
@@ -58,13 +59,15 @@ Produce:
 - topic directions with numeric difficulty plus evidence-linked subtopics and keyword clusters.
 
 Every available source-derived keyword, SERP result, question, fact, gap, competitor, subtopic, and
-cluster must cite persisted Observation IDs. Do not fabricate an ID or submit evidence that has not
-been recorded natively.
+cluster must cite persisted Observation IDs. Record independent evidence together through
+`content_pipeline_observation_record_batch`. Then submit only the research type, scope, query,
+selected evidence IDs, summary, chosen directions, and recommendations. Do not duplicate normalized
+evidence in Stage Complete.
 
 ## Stage completion
 
-Return the typed payload, strict provenance, source timestamps, the union of Observation IDs, and only
-bounded raw evidence/raw artifact references when needed. Do not build `artifactRefs`, Result
+Return compact decisions, strict provenance, source timestamps, the union of selected Observation
+IDs, and only bounded raw evidence references when needed. Do not build `artifactRefs`, Result
 envelopes, Markdown/JSON wrappers, hashes, or byte counts.
 
 The master calls `content_pipeline_stage_complete`. It validates SERP-first ordering and coverage,
@@ -74,5 +77,5 @@ renders:
 - `.dineway/content/runs/<run-id>/jobs/<job-id>/research/findings.md`.
 
 The same transaction derives receipts, verifies every Observation exists, finishes the Attempt and
-Assignment, creates schema-version-2 Research, and accepts it. Do not call granular Result/accept
+Assignment, creates Research, and accepts it. Do not call granular Result/accept
 operations or create a Brief, Draft, or CMS mutation from this Skill.

@@ -173,14 +173,14 @@ class ScanContentWorkTest(unittest.TestCase):
             "native-state.json",
             self.state(
                 [self.job_entry("optimization", "job-optimize", accepted=accepted)],
-                current_stage="quality_attestation",
-                next_action="derive_quality_attestation",
+                current_stage="release_readiness",
+                next_action="inspect_release_readiness",
             ),
         )
         self.write_json("jobs/job-optimize/result-receipt.json", accepted)
         self.write_json("jobs/job-optimize/optimize/report.json", {"score": 80})
         result = scan(self.run_dir)
-        self.assertEqual(result["nextAction"], "derive_quality_attestation")
+        self.assertEqual(result["nextAction"], "inspect_release_readiness")
 
     def test_runs_deep_geo_when_enabled_by_run_policy(self) -> None:
         accepted = self.result("optimization", "job-optimize", "draft-2")

@@ -6,8 +6,8 @@ description: Convert an accepted Dineway Research Result into one Writer-ready, 
 # Dineway Content Brief
 
 Execute one Brief Stage that the master Pipeline already began. Use only the accepted Research
-Result as evidence authority. Return one structured Brief payload; Stage Complete renders the
-canonical Markdown and derives its receipt.
+Result as evidence authority. Return compact editorial decisions; the server compiles the complete
+Brief from accepted Research and Stage Complete renders canonical Markdown and derives its receipt.
 
 ## Required inputs
 
@@ -50,9 +50,10 @@ Do not hide optional ideas among required scope.
 
 ## Stage completion
 
-Return only the typed Brief payload, provenance, source timestamps, and the union of persisted
-Observation IDs. Do not build an `artifactRef`, Result envelope, Markdown wrapper, hash, byte count,
-or acceptance write.
+Return only target/audience/voice selections, guardrails, internal-link/media choices, approved
+questions, the ordered outline, provenance, and selected persisted Observation IDs. Do not repeat
+Research metrics, locale, schema, CMS identity, or upstream bindings; the server hydrates them. Do
+not build an `artifactRef`, Result envelope, Markdown wrapper, hash, byte count, or acceptance write.
 
 An authenticated human reviews the structured Brief and calls `content_pipeline_stage_complete`
 with `briefApproval.confirmed=true`. API-token and system actors cannot approve it. The transaction
@@ -60,6 +61,6 @@ validates Research inheritance and outline completeness, renders:
 
 - `.dineway/content/runs/<run-id>/jobs/<job-id>/brief/brief.md`;
 
-then derives its receipt, verifies every Observation, creates schema-version-2 Brief, accepts it,
+then derives its receipt, verifies every Observation, creates the Brief, accepts it,
 and returns `begin_writer`. Do not call granular Result/accept operations or mutate a CMS Draft from
 this Skill.

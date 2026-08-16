@@ -23,19 +23,19 @@ authority. Local files never grant permission to mutate, approve, attest, schedu
 Use native Run and Job IDs as directory names. Never use title, keyword, slug, URL, or opportunity
 name as identity. Do not commit site-specific artifacts unless that site repository permits it.
 
-## Native snapshot version 5
+## Native recovery snapshot
 
 Cache the exact `content_pipeline_status_get` response under `status`, then add current CMS and
 read-only release data without rewriting the status fields:
 
 ```json
 {
-	"contractVersion": 5,
 	"observedAt": "2026-08-14T00:08:00Z",
 	"status": {
-		"run": { "id": "run-id", "status": "active", "version": 5 },
-		"currentStage": "quality_attestation",
-		"nextAction": "derive_quality_attestation",
+		"runId": "run-id",
+		"status": "active",
+		"currentStage": "release_readiness",
+		"nextAction": "inspect_release_readiness",
 		"timing": {
 			"startedAt": "2026-08-14T00:00:00Z",
 			"generatedAt": "2026-08-14T00:08:00Z",
@@ -43,7 +43,7 @@ read-only release data without rewriting the status fields:
 			"agentWorkMs": 300000,
 			"orchestrationMs": 180000
 		},
-		"jobs": []
+		"stages": []
 	},
 	"content": {
 		"collection": "posts",
@@ -64,12 +64,12 @@ next action only for authoritative recovery or a corrupt/missing local cache art
 
 ## Stage Complete and Result receipts
 
-Pass a typed stage payload to `content_pipeline_stage_complete`. For Research and Brief, the server
-first renders the canonical artifacts from that validated payload. For other stages, pass canonical
-artifact content with the typed payload. The server derives the artifact reference, SHA-256, UTF-8
-byte count, provenance receipt, immutable typed Result, acceptance state, and next action in one
-boundary. Callers must not precompute or duplicate these fields in `evidence.json`, a Result
-envelope, or a separate wrapper.
+Pass compact stage decisions/source/assessment to `content_pipeline_stage_complete`. For Research,
+Brief, Writer, and Optimization, the server hydrates native inputs and compiles canonical artifacts
+from the validated compact input. It derives the artifact reference, SHA-256, UTF-8 byte count,
+provenance receipt, immutable typed Result, acceptance state, and next action in one boundary.
+Callers must not precompute or duplicate these fields in `evidence.json`, a Result envelope, or a
+separate wrapper.
 
 Store the returned Result object unchanged as `jobs/<job-id>/result-receipt.json` when a local cache
 is useful. It is replaceable from native status. Never edit it to make local state appear current.
@@ -96,10 +96,11 @@ CMS binding, and an ordered outline with direct answer, at-a-glance, one section
 methodology, optional approved-question FAQ, CTA, Observation-linked key points, and bounded word
 budgets. The server deterministically projects `brief/brief.md`; callers never submit its wrapper.
 
-The Draft receipt contains native identity, never a second article body. Optimization includes
-exact Draft identity, suggestion decisions, score history, one native content-QA report, and
-evidence IDs. Content QA never includes browser, screenshot, lazy-loading, responsive-layout, or
-interaction/rendering checks.
+The Writer source contains schema-addressed fields and ordered sections/cards, while the returned
+Draft receipt contains native identity and fingerprints—never a second article body. Optimization
+is audit-only by default and returns an assessment; optional remediation uses one Writer-shaped
+source and one explicit source/final Draft lineage edge. Content QA never includes browser,
+screenshot, lazy-loading, responsive-layout, or interaction/rendering checks.
 
 ## Identity and invalidation
 

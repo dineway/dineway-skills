@@ -30,14 +30,11 @@ REQUIRED_DURATION_KEYS = (
     "qa",
 )
 REQUIRED_SCOPE = {
-    "comparisonBasis": "workflow_artifacts_fields",
-    "researchContract": "research-v2",
-    "briefContract": "brief-v2",
+    "comparisonBasis": "four_stage_article",
 }
-CONTENT_READY_TARGET_SECONDS = 18 * 60
-REVIEW_READY_TARGET_SECONDS = 22 * 60
-HARD_CEILING_SECONDS = 25 * 60
-EXTERNAL_CALL_BUDGET = 50
+QUALITY_GATE_TARGET_SECONDS = 15 * 60
+TOOL_ROUND_TRIP_BUDGET = 50
+TOOL_OUTPUT_BYTE_BUDGET = 400 * 1024
 
 
 class BenchmarkTraceError(ValueError):
@@ -83,14 +80,10 @@ def _elapsed_seconds(start: datetime, end: datetime, name: str) -> float:
 
 def benchmark_trace(
     trace: dict[str, Any],
-    baseline_review_seconds: float,
+    baseline_quality_gate_seconds: float,
 ) -> dict[str, Any]:
-    if baseline_review_seconds <= 0:
-        raise BenchmarkTraceError("Baseline Review-ready duration must be positive")
-
-    protocol = _mapping(trace.get("protocol"), "protocol identity")
-    if protocol.get("version") != 2 or protocol.get("resultContractVersion") != 2:
-        raise BenchmarkTraceError("Trace requires Pipeline protocol 2 and Result contract 2")
+    if baseline_quality_gate_seconds <= 0:
+        raise BenchmarkTraceError("Baseline quality-gate duration must be positive")
 
     scope = _mapping(trace.get("scope"), "comparable scope")
     if scope.get("comparable") is not True:
@@ -104,26 +97,23 @@ def benchmark_trace(
 
     milestones = _mapping(trace.get("milestones"), "session milestones")
     requested_at = _instant(milestones.get("requestedAt"), "requestedAt")
-    content_ready_at = _instant(milestones.get("contentReadyAt"), "contentReadyAt")
-    review_ready_at = _instant(milestones.get("reviewReadyAt"), "reviewReadyAt")
-    benchmark_completed_at = _instant(
-        milestones.get("benchmarkCompletedAt"), "benchmarkCompletedAt"
+    quality_gate_at = _instant(milestones.get("qualityGateCompletedAt"), "qualityGateCompletedAt")
+    quality_gate_seconds = _elapsed_seconds(
+        requested_at, quality_gate_at, "qualityGateCompletedAt"
     )
-    if not requested_at <= content_ready_at <= review_ready_at <= benchmark_completed_at:
-        raise BenchmarkTraceError(
-            "Milestones must be ordered requested -> content-ready -> review-ready -> benchmark-complete"
-        )
-    content_ready_seconds = _elapsed_seconds(requested_at, content_ready_at, "contentReadyAt")
-    review_ready_seconds = _elapsed_seconds(requested_at, review_ready_at, "reviewReadyAt")
-    benchmark_seconds = _elapsed_seconds(
-        requested_at, benchmark_completed_at, "benchmarkCompletedAt"
-    )
+    review_ready_seconds = None
+    review_ready_value = milestones.get("reviewReadyAt")
+    if review_ready_value is not None:
+        review_ready_at = _instant(review_ready_value, "reviewReadyAt")
+        if review_ready_at < quality_gate_at:
+            raise BenchmarkTraceError("reviewReadyAt cannot precede qualityGateCompletedAt")
+        review_ready_seconds = _elapsed_seconds(requested_at, review_ready_at, "reviewReadyAt")
     published_at_value = milestones.get("publishedAt")
     optional_publish_seconds = None
     if published_at_value is not None:
         published_at = _instant(published_at_value, "publishedAt")
-        if published_at < review_ready_at:
-            raise BenchmarkTraceError("publishedAt cannot precede reviewReadyAt")
+        if published_at < quality_gate_at:
+            raise BenchmarkTraceError("publishedAt cannot precede qualityGateCompletedAt")
         optional_publish_seconds = _elapsed_seconds(requested_at, published_at, "publishedAt")
 
     durations = _mapping(trace.get("durationsMs"), "duration breakdown")
@@ -147,66 +137,81 @@ def benchmark_trace(
     lifecycle_writes = _list(operations.get("lifecycleWrites"), "lifecycleWrites")
     if lifecycle_writes != list(STANDARD_LIFECYCLE_WRITES):
         raise BenchmarkTraceError("Trace must contain the exact nine-write lifecycle in order")
-    external_calls = _list(operations.get("externalCalls"), "externalCalls")
+    tool_round_trips = _list(operations.get("toolRoundTrips"), "toolRoundTrips")
     retries = _list(operations.get("retries"), "retries")
-    legacy_fallbacks = _list(operations.get("legacyFallbacks"), "legacyFallbacks")
     browser_qa_calls = _list(operations.get("browserQaCalls"), "browserQaCalls")
+    rebinding_jobs = _list(operations.get("rebindingJobs"), "rebindingJobs")
+    late_attestation_failures = _list(
+        operations.get("lateAttestationFailures"), "lateAttestationFailures"
+    )
+    tool_output_bytes = operations.get("toolOutputBytes")
+    cms_draft_writes = operations.get("cmsDraftWrites")
+    writer_source_submissions = operations.get("writerSourceSubmissions")
+    if not isinstance(tool_output_bytes, int) or isinstance(tool_output_bytes, bool):
+        raise BenchmarkTraceError("Trace operations.toolOutputBytes must be an integer")
+    if tool_output_bytes < 0:
+        raise BenchmarkTraceError("Trace operations.toolOutputBytes cannot be negative")
+    if cms_draft_writes != 1:
+        raise BenchmarkTraceError("Clean trace must contain exactly one CMS Draft write")
+    if writer_source_submissions != 1:
+        raise BenchmarkTraceError("Trace must contain exactly one Writer source submission")
     context_compactions = operations.get("contextCompactions")
     if not isinstance(context_compactions, int) or isinstance(context_compactions, bool):
         raise BenchmarkTraceError("Trace operations.contextCompactions must be an integer")
     if context_compactions < 0:
         raise BenchmarkTraceError("Trace operations.contextCompactions cannot be negative")
 
-    content_target_met = content_ready_seconds <= CONTENT_READY_TARGET_SECONDS
-    review_target_met = review_ready_seconds <= REVIEW_READY_TARGET_SECONDS
-    hard_ceiling_met = benchmark_seconds <= HARD_CEILING_SECONDS
+    quality_gate_target_met = quality_gate_seconds <= QUALITY_GATE_TARGET_SECONDS
     lifecycle_budget_met = len(lifecycle_writes) <= len(STANDARD_LIFECYCLE_WRITES)
-    external_call_budget_met = len(external_calls) <= EXTERNAL_CALL_BUDGET
+    tool_round_trip_budget_met = len(tool_round_trips) <= TOOL_ROUND_TRIP_BUDGET
+    tool_output_budget_met = tool_output_bytes <= TOOL_OUTPUT_BYTE_BUDGET
     no_context_compaction = context_compactions == 0
-    no_legacy_fallback = len(legacy_fallbacks) == 0
     no_browser_qa = len(browser_qa_calls) == 0
+    no_rebinding_jobs = len(rebinding_jobs) == 0
+    no_late_attestation_failure = len(late_attestation_failures) == 0
     target_met = all(
         (
-            content_target_met,
-            review_target_met,
-            hard_ceiling_met,
+            quality_gate_target_met,
             lifecycle_budget_met,
-            external_call_budget_met,
+            tool_round_trip_budget_met,
+            tool_output_budget_met,
             no_context_compaction,
-            no_legacy_fallback,
             no_browser_qa,
+            no_rebinding_jobs,
+            no_late_attestation_failure,
         )
     )
 
-    reduction_fraction = (baseline_review_seconds - review_ready_seconds) / baseline_review_seconds
+    reduction_fraction = (
+        baseline_quality_gate_seconds - quality_gate_seconds
+    ) / baseline_quality_gate_seconds
     return {
-        "protocolVersion": protocol["version"],
-        "resultContractVersion": protocol["resultContractVersion"],
         "scope": scope,
-        "baselineReviewReadySeconds": baseline_review_seconds,
-        "contentReadySeconds": content_ready_seconds,
+        "baselineQualityGateSeconds": baseline_quality_gate_seconds,
+        "qualityGateSeconds": quality_gate_seconds,
         "reviewReadySeconds": review_ready_seconds,
-        "benchmarkSeconds": benchmark_seconds,
         "optionalPublishSeconds": optional_publish_seconds,
-        "reviewReadyReductionPercent": round(reduction_fraction * 100, 2),
+        "qualityGateReductionPercent": round(reduction_fraction * 100, 2),
         "durationsSeconds": duration_seconds,
-        "contentReadyTargetSeconds": CONTENT_READY_TARGET_SECONDS,
-        "reviewReadyTargetSeconds": REVIEW_READY_TARGET_SECONDS,
-        "hardCeilingSeconds": HARD_CEILING_SECONDS,
-        "contentReadyTargetMet": content_target_met,
-        "reviewReadyTargetMet": review_target_met,
-        "hardCeilingMet": hard_ceiling_met,
+        "qualityGateTargetSeconds": QUALITY_GATE_TARGET_SECONDS,
+        "qualityGateTargetMet": quality_gate_target_met,
         "lifecycleWrites": len(lifecycle_writes),
         "lifecycleWriteBudget": len(STANDARD_LIFECYCLE_WRITES),
         "lifecycleWriteBudgetMet": lifecycle_budget_met,
-        "externalCalls": len(external_calls),
-        "externalCallBudget": EXTERNAL_CALL_BUDGET,
-        "externalCallBudgetMet": external_call_budget_met,
+        "toolRoundTrips": len(tool_round_trips),
+        "toolRoundTripBudget": TOOL_ROUND_TRIP_BUDGET,
+        "toolRoundTripBudgetMet": tool_round_trip_budget_met,
+        "toolOutputBytes": tool_output_bytes,
+        "toolOutputByteBudget": TOOL_OUTPUT_BYTE_BUDGET,
+        "toolOutputBudgetMet": tool_output_budget_met,
+        "cmsDraftWrites": cms_draft_writes,
+        "writerSourceSubmissions": writer_source_submissions,
         "retries": len(retries),
         "contextCompactions": context_compactions,
         "noContextCompaction": no_context_compaction,
-        "noLegacyFallback": no_legacy_fallback,
         "noBrowserQa": no_browser_qa,
+        "noRebindingJobs": no_rebinding_jobs,
+        "noLateAttestationFailure": no_late_attestation_failure,
         "targetMet": target_met,
         "stages": list(STANDARD_STAGES),
     }
@@ -215,13 +220,13 @@ def benchmark_trace(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session-trace", required=True, type=Path)
-    parser.add_argument("--baseline-review-seconds", type=float, default=18 * 60)
+    parser.add_argument("--baseline-quality-gate-seconds", type=float, default=36 * 60 + 59)
     parser.add_argument("--require-target", action="store_true")
     args = parser.parse_args()
 
     try:
         trace = json.loads(args.session_trace.read_text(encoding="utf-8"))
-        result = benchmark_trace(trace, args.baseline_review_seconds)
+        result = benchmark_trace(trace, args.baseline_quality_gate_seconds)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, BenchmarkTraceError) as error:
         parser.error(str(error))
 
