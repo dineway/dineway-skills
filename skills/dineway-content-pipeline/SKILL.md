@@ -18,6 +18,7 @@ Read `references/performance-benchmark.md` when measuring or reporting Pipeline 
 
 ## Invariants
 
+- Read [`dineway-cli`](../dineway-cli/SKILL.md) before running the capability preflight below.
 - Run exactly one `content_pipeline_capabilities_get` preflight before the first mutation (CLI:
   `dineway pipeline capabilities`). Proceed only when compact Context, batch Observations, Run Start,
   Stage Begin/Complete, Draft assembly, atomic quality completion, connection readiness, and actor

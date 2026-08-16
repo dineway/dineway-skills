@@ -26,6 +26,10 @@ For local dev servers, just run the command — auth is handled automatically. F
 
 `dineway deploy` does not use Dineway instance authentication. Forgeway deploy uses a project shadow deploy grant only to upgrade to a verified Dineway account by email; Other deploy targets use provider CLIs such as Railway CLI, flyctl, or gcloud.
 
+## Checking Localhost Services
+
+Before starting a dev server, check the target port with `lsof -nP -iTCP:<port> -sTCP:LISTEN`. If sandboxed `curl` fails, retry it with escalated host-network access. Do not start another server unless that retry also fails; if `lsof` shows a listener, inspect the existing process instead.
+
 ## Custom Headers & Reverse Proxies
 
 Sites behind external auth proxies or other reverse proxies may need auth headers on every request. The CLI supports this via `--header` flags and environment variables.
