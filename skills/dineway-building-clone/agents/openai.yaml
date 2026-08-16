@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dineway Build Clone"
+  short_description: "Clone websites into pixel-faithful Dineway sites"
+  default_prompt: "Use $dineway-building-clone to rebuild one or more source URLs as a pixel-faithful, CMS-backed Dineway Site."
