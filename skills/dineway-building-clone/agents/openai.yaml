@@ -1,4 +1,4 @@
 interface:
   display_name: "Dineway Build Clone"
-  short_description: "Clone websites into pixel-faithful Dineway sites"
-  default_prompt: "Use $dineway-building-clone to rebuild one or more source URLs as a pixel-faithful, CMS-backed Dineway Site."
+  short_description: "Plan source-faithful, data-backed Dineway clones"
+  default_prompt: "Use $dineway-building-clone to generate and validate a clone agent from one or more URLs, including public source data/API and CMS field mapping, then ask me to confirm execution as a goal for a pixel-faithful Dineway Site."
