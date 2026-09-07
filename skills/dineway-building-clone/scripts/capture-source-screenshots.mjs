@@ -159,11 +159,9 @@ async function scrollToCssPosition(page, requestedY, timeoutMs) {
 		window.scrollTo({ top: target, left: 0, behavior: "instant" });
 		return target;
 	}, requestedY);
-	await page.waitForFunction(
-		(expectedY) => Math.abs(window.scrollY - expectedY) <= 1,
-		targetY,
-		{ timeout: Math.min(timeoutMs, 5000) },
-	);
+	await page.waitForFunction((expectedY) => Math.abs(window.scrollY - expectedY) <= 1, targetY, {
+		timeout: Math.min(timeoutMs, 5000),
+	});
 	return Math.round(await page.evaluate(() => window.scrollY));
 }
 
@@ -175,7 +173,10 @@ async function waitForFonts(page, timeoutMs) {
 				if (document.fonts) await document.fonts.ready;
 			}),
 			new Promise((_, reject) => {
-				timeout = setTimeout(() => reject(new Error("Timed out waiting for document fonts")), timeoutMs);
+				timeout = setTimeout(
+					() => reject(new Error("Timed out waiting for document fonts")),
+					timeoutMs,
+				);
 			}),
 		]);
 	} finally {
@@ -210,7 +211,9 @@ async function waitForViewportImages(page, timeoutMs) {
 							image.getAttribute("data-lazy-src") ||
 							image.closest("picture")?.querySelector("source[srcset], source[data-srcset]");
 						if (!expectedSource) return true;
-						return Boolean(image.currentSrc || image.src) && image.complete && image.naturalWidth > 0;
+						return (
+							Boolean(image.currentSrc || image.src) && image.complete && image.naturalWidth > 0
+						);
 					});
 			},
 			undefined,
@@ -258,7 +261,9 @@ async function auditImages(page) {
 				);
 			})
 			.map((image, index) => {
-				const pictureSource = image.closest("picture")?.querySelector("source[srcset], source[data-srcset]");
+				const pictureSource = image
+					.closest("picture")
+					?.querySelector("source[srcset], source[data-srcset]");
 				return {
 					index,
 					source:
@@ -298,7 +303,12 @@ async function preloadCssAndPosterImages(page, timeoutMs) {
 		for (const element of document.querySelectorAll("*")) {
 			const style = getComputedStyle(element);
 			const rect = element.getBoundingClientRect();
-			if (style.display === "none" || style.visibility === "hidden" || rect.width <= 0 || rect.height <= 0) {
+			if (
+				style.display === "none" ||
+				style.visibility === "hidden" ||
+				rect.width <= 0 ||
+				rect.height <= 0
+			) {
 				continue;
 			}
 			add(style.backgroundImage);
@@ -413,7 +423,9 @@ function validateTileCoverage(tiles, documentHeight) {
 		coveredUntil = Math.max(coveredUntil, tile.y + tile.height);
 	}
 	if (coveredUntil < documentHeight) {
-		throw new Error(`Screenshot tiles stop at CSS position ${coveredUntil} before ${documentHeight}`);
+		throw new Error(
+			`Screenshot tiles stop at CSS position ${coveredUntil} before ${documentHeight}`,
+		);
 	}
 }
 
@@ -534,9 +546,12 @@ async function capture(options) {
 		});
 		if (stitched.error) throw stitched.error;
 		if (stitched.status !== 0) {
-			throw new Error(stitched.stderr.trim() || stitched.stdout.trim() || "Screenshot stitching failed");
+			throw new Error(
+				stitched.stderr.trim() || stitched.stdout.trim() || "Screenshot stitching failed",
+			);
 		}
-		if (!existsSync(options.output)) throw new Error("Screenshot stitcher did not create the output file");
+		if (!existsSync(options.output))
+			throw new Error("Screenshot stitcher did not create the output file");
 
 		const outputPixels = pngDimensions(options.output);
 		metadata.output = {

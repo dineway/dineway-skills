@@ -22,53 +22,53 @@ Example skeleton:
 
 ```json
 {
-  "scope": {
-    "comparable": true,
-    "comparisonBasis": "four_stage_article",
-    "contentType": "article",
-    "locale": "en-SG"
-  },
-  "milestones": {
-    "requestedAt": "2026-08-13T00:00:00Z",
-    "qualityGateCompletedAt": "2026-08-13T00:14:00Z",
-    "reviewReadyAt": null,
-    "publishedAt": null
-  },
-  "durationsMs": {
-    "humanApprovalWait": 60000,
-    "toolExecution": 420000,
-    "agentReasoning": 540000,
-    "orchestration": 120000,
-    "qa": 60000
-  },
-  "operations": {
-    "lifecycleWrites": [
-      "run_start",
-      "research_begin",
-      "research_complete",
-      "brief_begin",
-      "brief_complete",
-      "writer_begin",
-      "writer_complete",
-      "optimization_begin",
-      "optimization_complete"
-    ],
-    "toolRoundTrips": [],
-    "toolOutputBytes": 0,
-    "cmsDraftWrites": 1,
-    "writerSourceSubmissions": 1,
-    "retries": [],
-    "contextCompactions": 0,
-    "browserQaCalls": [],
-    "rebindingJobs": [],
-    "lateAttestationFailures": []
-  },
-  "jobs": [
-    { "job": { "stage": "research", "status": "completed" } },
-    { "job": { "stage": "brief", "status": "completed" } },
-    { "job": { "stage": "writer", "status": "completed" } },
-    { "job": { "stage": "optimization", "status": "completed" } }
-  ]
+	"scope": {
+		"comparable": true,
+		"comparisonBasis": "four_stage_article",
+		"contentType": "article",
+		"locale": "en-SG"
+	},
+	"milestones": {
+		"requestedAt": "2026-08-13T00:00:00Z",
+		"qualityGateCompletedAt": "2026-08-13T00:14:00Z",
+		"reviewReadyAt": null,
+		"publishedAt": null
+	},
+	"durationsMs": {
+		"humanApprovalWait": 60000,
+		"toolExecution": 420000,
+		"agentReasoning": 540000,
+		"orchestration": 120000,
+		"qa": 60000
+	},
+	"operations": {
+		"lifecycleWrites": [
+			"run_start",
+			"research_begin",
+			"research_complete",
+			"brief_begin",
+			"brief_complete",
+			"writer_begin",
+			"writer_complete",
+			"optimization_begin",
+			"optimization_complete"
+		],
+		"toolRoundTrips": [],
+		"toolOutputBytes": 0,
+		"cmsDraftWrites": 1,
+		"writerSourceSubmissions": 1,
+		"retries": [],
+		"contextCompactions": 0,
+		"browserQaCalls": [],
+		"rebindingJobs": [],
+		"lateAttestationFailures": []
+	},
+	"jobs": [
+		{ "job": { "stage": "research", "status": "completed" } },
+		{ "job": { "stage": "brief", "status": "completed" } },
+		{ "job": { "stage": "writer", "status": "completed" } },
+		{ "job": { "stage": "optimization", "status": "completed" } }
+	]
 }
 ```
 

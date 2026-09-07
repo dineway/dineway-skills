@@ -159,12 +159,12 @@ Resolution: re-read with `get`, inspect the new state, then `update` with the fr
 
 Only `update`. All other operations are either idempotent or non-destructive:
 
-| Command             | `--rev` needed? | Why                      |
-| ------------------- | --------------- | ------------------------ |
-| `content create`    | No              | Nothing exists yet       |
-| `content update`    | **Yes**         | Overwrites existing data |
-| `content delete`    | No              | Soft delete, reversible  |
+| Command             | `--rev` needed? | Why                                       |
+| ------------------- | --------------- | ----------------------------------------- |
+| `content create`    | No              | Nothing exists yet                        |
+| `content update`    | **Yes**         | Overwrites existing data                  |
+| `content delete`    | No              | Soft delete, reversible                   |
 | `content publish`   | No              | Requires review and release authorization |
-| `content unpublish` | No              | Idempotent status change |
+| `content unpublish` | No              | Idempotent status change                  |
 | `content schedule`  | No              | Requires review and release authorization |
-| `content restore`   | No              | Restores from trash      |
+| `content restore`   | No              | Restores from trash                       |

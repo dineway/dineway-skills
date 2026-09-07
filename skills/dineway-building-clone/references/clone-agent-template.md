@@ -34,13 +34,15 @@ errors, decisions, gate evidence, and verification results under `.plan/{{CLONE_
 ## Source URLs and One-Hop Discovery
 
 | Source URL | Scope | Explicit parent | Preserved state | Normalized pathname | Discovery decision |
-| --- | --- | --- | --- | --- | --- |
+| ---------- | ----- | --------------- | --------------- | ------------------- | ------------------ |
+
 {{SOURCE_URL_PLAN_ROWS}}
 
 ## Route and Artifact Plan
 
 | Source URL | Scope | Explicit parent | Destination route | Route family | Dineway mapping | site-key | page-key | Research root | Screenshot root | Component namespace | Asset namespace | Collision resolution |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ---------- | ----- | --------------- | ----------------- | ------------ | --------------- | -------- | -------- | ------------- | --------------- | ------------------- | --------------- | -------------------- |
+
 {{ROUTE_AND_ARTIFACT_ROWS}}
 
 Every row must identify whether it is explicit or discovered, the explicit parent when discovered,
@@ -52,25 +54,29 @@ screenshot root, component namespace, asset namespace, and any collision resolut
 {{SOURCE_DATA_LAYER_AUDIT}}
 
 | Page URL | Surface | Location/endpoint | Transport method | Operation type | Access | Parameters/state | Pagination | Filter/sort | Response entity | UI consumer | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| -------- | ------- | ----------------- | ---------------- | -------------- | ------ | ---------------- | ---------- | ----------- | --------------- | ----------- | -------- |
+
 {{SOURCE_DATA_LAYER_ROWS}}
 
 ### Source Page Content Closure
 
 | Page URL | HTML document surface | Visible entity | Visible field refs | Visible record IDs | Stable selectors | Evidence |
-| --- | --- | --- | --- | --- | --- | --- |
+| -------- | --------------------- | -------------- | ------------------ | ------------------ | ---------------- | -------- |
+
 {{SOURCE_PAGE_CONTENT_ROWS}}
 
 ### Source Field Inventory
 
 | Source field ref | Source entity | Source path | Observed type | Nullable | Data class | Observed in-scope values | Identifier role | Enum/date semantics | Relationship/cardinality | Locale/status | Media shape | UI consumer | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| ---------------- | ------------- | ----------- | ------------- | -------- | ---------- | ------------------------ | --------------- | ------------------- | ------------------------ | ------------- | ----------- | ----------- | -------- |
+
 {{SOURCE_FIELD_INVENTORY_ROWS}}
 
 ### Source Record Inventory
 
 | Source entity | Source record ID | Ordered field tuple (compact JSON by sourceRef) | UI consumer | Evidence |
-| --- | --- | --- | --- | --- |
+| ------------- | ---------------- | ----------------------------------------------- | ----------- | -------- |
+
 {{SOURCE_RECORD_INVENTORY_ROWS}}
 
 For every planned page, browser-extract a complete visible-content manifest before modeling APIs:
@@ -120,17 +126,20 @@ redirect target before fetching to prevent rebinding.
 The completed agent must include concrete mapping tables with, at minimum:
 
 | Source entity | Source location/API | Dineway owner | Collection/section/setting/menu | Route consumer | Evidence |
-| --- | --- | --- | --- | --- | --- |
+| ------------- | ------------------- | ------------- | ------------------------------- | -------------- | -------- |
+
 {{SOURCE_ENTITY_MAPPING_ROWS}}
 
 | Source field ref/path | Owner kind | Owner key | Target path | Canonical Dineway CMS field name/label | Runtime storageSlug | Dineway type | Required/nullability | Validation/options | Relationship/cardinality | Locale/status | Media ownership/source | Seed/render consumer | Evidence |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --------------------- | ---------- | --------- | ----------- | -------------------------------------- | ------------------- | ------------ | -------------------- | ------------------ | ------------------------ | ------------- | ---------------------- | -------------------- | -------- |
+
 {{SOURCE_FIELD_MAPPING_ROWS}}
 
 ### Source Record Binding Plan
 
 | Source entity | Source record ID | Owner kind | Owner key | Seed JSON Pointer | Evidence |
-| --- | --- | --- | --- | --- | --- |
+| ------------- | ---------------- | ---------- | --------- | ----------------- | -------- |
+
 {{SOURCE_RECORD_BINDING_ROWS}}
 
 Every visible source-backed entity and field must appear exactly once as an owned setting, menu,
@@ -796,9 +805,9 @@ Build the origin's shared foundation yourself; do not delegate files shared by m
    the gate passes. A well-formed proof artifact without this fresh live read is insufficient.
 9. Start development through the repository's approved background-process mechanism, generate current Dineway types, and keep the generated types as the component data contract. Import query helpers from Dineway, destructure the returned `cacheHint`, call `Astro.cache.set(cacheHint)`, verify every `runtimeReadPath` resolves through the owner-specific query, verify localized mappings match bound seed locales, and require every canonical camelCase alias and runtime `storageSlug` to be collision-free.
 10. Extract inline `<svg>` elements into same-site shared or page-scoped Astro icon components under
-   the planned namespace. Deduplicate only exact same-site icons and name them by visual function,
-   such as `SearchIcon`, `ArrowRightIcon`, or `LogoIcon`. Use React only when client-side state is
-   required.
+    the planned namespace. Deduplicate only exact same-site icons and name them by visual function,
+    such as `SearchIcon`, `ArrowRightIcon`, or `LogoIcon`. Use React only when client-side state is
+    required.
 11. Download decorative assets with unique filenames into planned namespaces. Keep editorial media in Dineway rather than hard-coding URLs into components.
 12. Verify all existing routes, then run `pnpm typecheck` and `pnpm build`.
 
@@ -810,35 +819,41 @@ Run an equivalent browser-side inspection for each page:
 
 ```javascript
 JSON.stringify({
-  images: [...document.querySelectorAll("img")].map((img) => ({
-    src: img.currentSrc || img.src,
-    alt: img.alt,
-    width: img.naturalWidth,
-    height: img.naturalHeight,
-    parentClasses: img.parentElement?.className,
-    siblings: img.parentElement?.querySelectorAll("img").length ?? 0,
-    position: getComputedStyle(img).position,
-    zIndex: getComputedStyle(img).zIndex,
-  })),
-  videos: [...document.querySelectorAll("video")].map((video) => ({
-    src: video.currentSrc || video.src || video.querySelector("source")?.src,
-    poster: video.poster,
-    autoplay: video.autoplay,
-    loop: video.loop,
-    muted: video.muted,
-  })),
-  backgroundImages: [...document.querySelectorAll("*")]
-    .filter((element) => getComputedStyle(element).backgroundImage !== "none")
-    .map((element) => ({
-      value: getComputedStyle(element).backgroundImage,
-      element: `${element.tagName}.${element.className?.toString().split(" ")[0] ?? ""}`,
-    })),
-  svgCount: document.querySelectorAll("svg").length,
-  fonts: [...new Set([...document.querySelectorAll("*")].slice(0, 200).map((element) => getComputedStyle(element).fontFamily))],
-  favicons: [...document.querySelectorAll('link[rel*="icon"]')].map((link) => ({
-    href: link.href,
-    sizes: link.sizes?.toString(),
-  })),
+	images: [...document.querySelectorAll("img")].map((img) => ({
+		src: img.currentSrc || img.src,
+		alt: img.alt,
+		width: img.naturalWidth,
+		height: img.naturalHeight,
+		parentClasses: img.parentElement?.className,
+		siblings: img.parentElement?.querySelectorAll("img").length ?? 0,
+		position: getComputedStyle(img).position,
+		zIndex: getComputedStyle(img).zIndex,
+	})),
+	videos: [...document.querySelectorAll("video")].map((video) => ({
+		src: video.currentSrc || video.src || video.querySelector("source")?.src,
+		poster: video.poster,
+		autoplay: video.autoplay,
+		loop: video.loop,
+		muted: video.muted,
+	})),
+	backgroundImages: [...document.querySelectorAll("*")]
+		.filter((element) => getComputedStyle(element).backgroundImage !== "none")
+		.map((element) => ({
+			value: getComputedStyle(element).backgroundImage,
+			element: `${element.tagName}.${element.className?.toString().split(" ")[0] ?? ""}`,
+		})),
+	svgCount: document.querySelectorAll("svg").length,
+	fonts: [
+		...new Set(
+			[...document.querySelectorAll("*")]
+				.slice(0, 200)
+				.map((element) => getComputedStyle(element).fontFamily),
+		),
+	],
+	favicons: [...document.querySelectorAll('link[rel*="icon"]')].map((link) => ({
+		href: link.href,
+		sizes: link.sizes?.toString(),
+	})),
 });
 ```
 
@@ -913,40 +928,105 @@ Use this browser-side computed-style walker, adapting only the selector:
 
 ```javascript
 (function (selector) {
-  const element = document.querySelector(selector);
-  if (!element) return JSON.stringify({ error: `Element not found: ${selector}` });
-  const properties = [
-    "fontSize", "fontWeight", "fontFamily", "lineHeight", "letterSpacing", "color",
-    "textTransform", "textDecoration", "backgroundColor", "background",
-    "padding", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft",
-    "margin", "marginTop", "marginRight", "marginBottom", "marginLeft",
-    "width", "height", "maxWidth", "minWidth", "maxHeight", "minHeight",
-    "display", "flexDirection", "justifyContent", "alignItems", "gap",
-    "gridTemplateColumns", "gridTemplateRows", "borderRadius", "border",
-    "borderTop", "borderBottom", "borderLeft", "borderRight", "boxShadow",
-    "overflow", "overflowX", "overflowY", "position", "top", "right", "bottom", "left",
-    "zIndex", "opacity", "transform", "transition", "cursor", "objectFit",
-    "objectPosition", "mixBlendMode", "filter", "backdropFilter", "whiteSpace",
-    "textOverflow", "WebkitLineClamp",
-  ];
-  function styles(node) {
-    const computed = getComputedStyle(node);
-    return Object.fromEntries(properties.map((property) => [property, computed[property]]).filter(([, value]) => value && !["none", "normal", "auto", "0px", "rgba(0, 0, 0, 0)"].includes(value)));
-  }
-  function walk(node, depth) {
-    if (depth > 4) return null;
-    const children = [...node.children];
-    return {
-      tag: node.tagName.toLowerCase(),
-      classes: node.className?.toString().split(" ").slice(0, 5).join(" "),
-      text: node.childNodes.length === 1 && node.childNodes[0].nodeType === 3 ? node.textContent.trim().slice(0, 200) : null,
-      styles: styles(node),
-      image: node.tagName === "IMG" ? { src: node.src, alt: node.alt, width: node.naturalWidth, height: node.naturalHeight } : null,
-      childCount: children.length,
-      children: children.slice(0, 20).map((child) => walk(child, depth + 1)).filter(Boolean),
-    };
-  }
-  return JSON.stringify(walk(element, 0), null, 2);
+	const element = document.querySelector(selector);
+	if (!element) return JSON.stringify({ error: `Element not found: ${selector}` });
+	const properties = [
+		"fontSize",
+		"fontWeight",
+		"fontFamily",
+		"lineHeight",
+		"letterSpacing",
+		"color",
+		"textTransform",
+		"textDecoration",
+		"backgroundColor",
+		"background",
+		"padding",
+		"paddingTop",
+		"paddingRight",
+		"paddingBottom",
+		"paddingLeft",
+		"margin",
+		"marginTop",
+		"marginRight",
+		"marginBottom",
+		"marginLeft",
+		"width",
+		"height",
+		"maxWidth",
+		"minWidth",
+		"maxHeight",
+		"minHeight",
+		"display",
+		"flexDirection",
+		"justifyContent",
+		"alignItems",
+		"gap",
+		"gridTemplateColumns",
+		"gridTemplateRows",
+		"borderRadius",
+		"border",
+		"borderTop",
+		"borderBottom",
+		"borderLeft",
+		"borderRight",
+		"boxShadow",
+		"overflow",
+		"overflowX",
+		"overflowY",
+		"position",
+		"top",
+		"right",
+		"bottom",
+		"left",
+		"zIndex",
+		"opacity",
+		"transform",
+		"transition",
+		"cursor",
+		"objectFit",
+		"objectPosition",
+		"mixBlendMode",
+		"filter",
+		"backdropFilter",
+		"whiteSpace",
+		"textOverflow",
+		"WebkitLineClamp",
+	];
+	function styles(node) {
+		const computed = getComputedStyle(node);
+		return Object.fromEntries(
+			properties
+				.map((property) => [property, computed[property]])
+				.filter(
+					([, value]) =>
+						value && !["none", "normal", "auto", "0px", "rgba(0, 0, 0, 0)"].includes(value),
+				),
+		);
+	}
+	function walk(node, depth) {
+		if (depth > 4) return null;
+		const children = [...node.children];
+		return {
+			tag: node.tagName.toLowerCase(),
+			classes: node.className?.toString().split(" ").slice(0, 5).join(" "),
+			text:
+				node.childNodes.length === 1 && node.childNodes[0].nodeType === 3
+					? node.textContent.trim().slice(0, 200)
+					: null,
+			styles: styles(node),
+			image:
+				node.tagName === "IMG"
+					? { src: node.src, alt: node.alt, width: node.naturalWidth, height: node.naturalHeight }
+					: null,
+			childCount: children.length,
+			children: children
+				.slice(0, 20)
+				.map((child) => walk(child, depth + 1))
+				.filter(Boolean),
+		};
+	}
+	return JSON.stringify(walk(element, 0), null, 2);
 })("SELECTOR");
 ```
 
@@ -958,24 +1038,34 @@ Write `<page-research>/components/<component-name>.spec.md` before dispatching. 
 # <ComponentName> Specification
 
 ## Overview
+
 - Target file: `src/components/sites/<site-key>/<page-key>/<ComponentName>.astro` or a justified `.tsx` island
 - Screenshot: `docs/design-references/<site-key>/<page-key>/<screenshot>.png`
 - Rendering boundary: Astro server component | React island with exact client directive
 - Interaction model: static | click | scroll | hover | time | combination
 
 ## DOM Structure
+
 Exact hierarchy and semantic elements.
 
 ## Computed Styles (exact values from getComputedStyle)
+
 ### Container
+
 - Every relevant exact computed value
+
 ### <Child element 1>
+
 - Every relevant exact computed value
+
 ### <Child element N>
+
 - Every relevant exact computed value
 
 ## States & Behaviors
+
 ### <Behavior>
+
 - Trigger and threshold
 - State A exact values
 - State B exact values
@@ -983,13 +1073,17 @@ Exact hierarchy and semantic elements.
 - Implementation mechanism
 
 ### Hover states
+
 - Exact property before → after and transition for every hover/focus target
 
 ## Per-State Content (if applicable)
+
 ### <State name>
+
 - Exact text, links, images, and data for this state
 
 ## Dineway Content Contract
+
 - Source: setting | menu | section | collection/entry | static decorative data
 - Source entity/API or payload path and evidence artifact
 - Collection and fields, including canonical camelCase names and runtime storageSlug values
@@ -1000,12 +1094,15 @@ Exact hierarchy and semantic elements.
 - Editorial media fields versus static decorative assets
 
 ## Assets
+
 - Namespaced paths and exact roles for every layer
 
 ## Text Content
+
 All source text verbatim.
 
 ## Responsive Behavior
+
 - Desktop 1440px
 - Tablet 768px
 - Mobile 390px
