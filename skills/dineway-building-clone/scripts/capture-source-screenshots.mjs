@@ -487,12 +487,107 @@ function relativePath(fromDirectory, path) {
 	return relative(fromDirectory, path).split("\\").join("/");
 }
 
-async function capture(options) {
+function assertPreparedPage(page, options) {
+	if (page.url() !== options.expectedUrl) {
+		throw new Error("Prepared page URL differs from the expected source state");
+	}
+}
+
+/** Capture a caller-prepared page in an isolated context after an explicitly
+ * authorized interactive login or state setup. Never imports or exports sessions.
+ * The caller retains ownership of the page/context and must supply its exact URL. */
+export async function capturePreparedPage(page, input) {
+	const options = parseArgs([
+		"--url",
+		input.url,
+		"--output",
+		input.output,
+		"--width",
+		String(input.width ?? 1440),
+		"--height",
+		String(input.height ?? 900),
+		"--timeout-ms",
+		String(input.timeoutMs ?? 60_000),
+		"--settle-ms",
+		String(input.settleMs ?? 250),
+	]);
+	if (typeof input.expectedUrl !== "string" || !input.expectedUrl) {
+		throw new Error("A prepared capture requires an explicit expectedUrl");
+	}
+	options.expectedUrl = new URL(input.expectedUrl).href;
+	assertPreparedPage(page, options);
+	const state = await documentState(page);
+	if (
+		state.devicePixelRatio !== 1 ||
+		state.innerWidth !== options.width ||
+		state.innerHeight !== options.height
+	) {
+		throw new Error("Prepared capture requires the exact viewport at devicePixelRatio 1");
+	}
+	page.setDefaultTimeout(options.timeoutMs);
+	page.setDefaultNavigationTimeout(options.timeoutMs);
 	mkdirSync(dirname(options.output), { recursive: true });
 	const metadataPath = metadataPathFor(options.output);
 	const tileDirectory = tileDirectoryFor(options.output);
-	const browser = await chromium.launch({ headless: !options.headed });
+	await page.waitForLoadState("load");
+	const fontsReady = await waitForFonts(page, options.timeoutMs);
+	const result = await captureTiles(page, options, tileDirectory);
+	const finalState = await documentState(page);
+	assertPreparedPage(page, options);
 
+	const metadataDirectory = dirname(metadataPath);
+	const metadata = {
+		version: "1",
+		requestedUrl: sanitizeUrl(options.url),
+		finalUrl: sanitizeUrl(page.url()),
+		capturedAt: new Date().toISOString(),
+		viewport: {
+			width: options.width,
+			height: options.height,
+			deviceScaleFactor: 1,
+		},
+		document: finalState,
+		readiness: {
+			fontsReady,
+			documentHeightStable: result.prepared.stable,
+			scrollPasses: result.prepared.passes,
+			renderedImageElements: result.prepared.audit.renderedImageElements,
+			loadedImageElements: result.prepared.audit.loadedImageElements,
+			backgroundAndPosterAssets: result.prepared.audit.backgroundAndPosterAssets,
+			loadedBackgroundAndPosterAssets: result.prepared.audit.loadedBackgroundAndPosterAssets,
+			failedImages: [],
+		},
+		tiles: result.tiles.map((tile) => ({
+			...tile,
+			file: relativePath(metadataDirectory, tile.file),
+		})),
+	};
+	writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
+
+	const stitched = spawnSync("python3", [STITCH_SCRIPT, metadataPath, options.output], {
+		encoding: "utf-8",
+	});
+	if (stitched.error) throw stitched.error;
+	if (stitched.status !== 0) {
+		throw new Error(
+			stitched.stderr.trim() || stitched.stdout.trim() || "Screenshot stitching failed",
+		);
+	}
+	if (!existsSync(options.output))
+		throw new Error("Screenshot stitcher did not create the output file");
+
+	const outputPixels = pngDimensions(options.output);
+	metadata.output = {
+		file: relativePath(metadataDirectory, options.output),
+		pixelWidth: outputPixels.width,
+		pixelHeight: outputPixels.height,
+	};
+	writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
+	return { metadataPath, metadata };
+}
+
+async function capture(options) {
+	const browser = await chromium.launch({ headless: !options.headed });
 	try {
 		const context = await browser.newContext({
 			viewport: { width: options.width, height: options.height },
@@ -500,68 +595,12 @@ async function capture(options) {
 			serviceWorkers: "block",
 		});
 		const page = await context.newPage();
-		page.setDefaultTimeout(options.timeoutMs);
 		page.setDefaultNavigationTimeout(options.timeoutMs);
-
 		const response = await page.goto(options.url, { waitUntil: "domcontentloaded" });
 		if (!response || response.status() >= 400) {
 			throw new Error(`Source navigation failed with HTTP ${response?.status() ?? "unknown"}`);
 		}
-		await page.waitForLoadState("load");
-		const fontsReady = await waitForFonts(page, options.timeoutMs);
-		const result = await captureTiles(page, options, tileDirectory);
-		const finalState = await documentState(page);
-
-		const metadataDirectory = dirname(metadataPath);
-		const metadata = {
-			version: "1",
-			requestedUrl: sanitizeUrl(options.url),
-			finalUrl: sanitizeUrl(page.url()),
-			capturedAt: new Date().toISOString(),
-			viewport: {
-				width: options.width,
-				height: options.height,
-				deviceScaleFactor: 1,
-			},
-			document: finalState,
-			readiness: {
-				fontsReady,
-				documentHeightStable: result.prepared.stable,
-				scrollPasses: result.prepared.passes,
-				renderedImageElements: result.prepared.audit.renderedImageElements,
-				loadedImageElements: result.prepared.audit.loadedImageElements,
-				backgroundAndPosterAssets: result.prepared.audit.backgroundAndPosterAssets,
-				loadedBackgroundAndPosterAssets: result.prepared.audit.loadedBackgroundAndPosterAssets,
-				failedImages: [],
-			},
-			tiles: result.tiles.map((tile) => ({
-				...tile,
-				file: relativePath(metadataDirectory, tile.file),
-			})),
-		};
-		writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
-
-		const stitched = spawnSync("python3", [STITCH_SCRIPT, metadataPath, options.output], {
-			encoding: "utf-8",
-		});
-		if (stitched.error) throw stitched.error;
-		if (stitched.status !== 0) {
-			throw new Error(
-				stitched.stderr.trim() || stitched.stdout.trim() || "Screenshot stitching failed",
-			);
-		}
-		if (!existsSync(options.output))
-			throw new Error("Screenshot stitcher did not create the output file");
-
-		const outputPixels = pngDimensions(options.output);
-		metadata.output = {
-			file: relativePath(metadataDirectory, options.output),
-			pixelWidth: outputPixels.width,
-			pixelHeight: outputPixels.height,
-		};
-		writeFileSync(metadataPath, `${JSON.stringify(metadata, null, 2)}\n`);
-		await context.close();
-		return { metadataPath, metadata };
+		return await capturePreparedPage(page, { ...options, expectedUrl: page.url() });
 	} finally {
 		await browser.close();
 	}
@@ -581,4 +620,4 @@ async function main() {
 	}
 }
 
-await main();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();

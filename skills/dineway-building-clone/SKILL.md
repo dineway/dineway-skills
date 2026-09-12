@@ -109,6 +109,69 @@ Create an explicit allowlist of approved differences. Everything else remains so
 Do not invent high-risk requirements. Keep unresolved material questions visible and ask only when
 the source evidence plus a safe recommendation cannot resolve them.
 
+### Existing-product migrations and follow-up refinements
+
+For migration into an established product, or refinement of a previous migration, inspect the
+current target alongside the reference. Identify the requested improvement, existing design
+decisions, shared components, and working flows. Use prior plans to understand intent; verify
+current affected surfaces before relying on old results.
+
+Distinguish faithful reproduction from explicitly approved adaptation in the change budget.
+Record which source relationships transfer and which target identity, content, routes, and
+behavior remain protected. A supplementary visual reference does not expand content import,
+source-backend access, or permission to alter the target's business behavior.
+
+Design quality depends on the relationships between typography, images, whitespace, navigation,
+and cards. Matching rounded corners, pill buttons, or a palette can still miss information density,
+reading rhythm, and the page's center of attention. Apply these six principles within the approved
+change budget:
+
+1. **Establish the whole visual order first.** Define content width, navigation boundaries, type
+   hierarchy, section spacing, card density, and control scale before polishing components. Compare
+   the affected home, list, detail, profile, and editing pages side by side so equivalent roles have
+   comparable visual weight. Preserve purposeful differences between page families; local polish
+   should support the composition of the page and site.
+2. **Understand the reference's design choices.** Explain the jobs of photos, titles, body copy,
+   search, buttons, and whitespace, and how they lead the reader. For example, a photo-led directory
+   may use photos to attract attention, titles to explain, search and buttons to guide action, and
+   whitespace to separate roles. Verify these relationships in the reference and fit them to the
+   target's real tasks. Size, color, and layout changes still require source evidence and an approved
+   difference; one site's font, palette, or dimensions are not universal defaults.
+3. **Give emphasis a purpose.** Identify the main reading focus and next action, then give secondary
+   information appropriate weight. Large headings, accent colors, shadows, decoration, and color
+   bands should serve an identifiable role. If they compete, adjust hierarchy, grouping, and spacing
+   before adding another treatment. Judge scale by reading tasks and content length; neither smaller
+   type nor fewer colors is an automatic improvement. Keep body and supporting text readable.
+4. **Test the design with real content.** Use actual CMS copy, images, and record counts to inspect
+   long titles, varied photo proportions, sparse results, empty states, and length changes across
+   supported languages. Keep images, captions, and links attached to the same record. Preserve CMS
+   editing bindings, Portable Text, and counts derived from real relationships; idealized placeholders
+   must not conceal layout problems. Disclose any fixture limitations in the evidence.
+5. **Use the browser throughout design.** Read, scroll, filter, type, and operate the keyboard at
+   desktop, tablet, and mobile widths while refining representative pages. For profile,
+   recommendation, guide, or venue-submission flows in scope, include their relevant states, such as
+   enrichment-stage feeds, error recovery, and draft previews. Check reading order, action visibility,
+   wrapping, cropping, photo height, and horizontal overflow. A successful build does not replace
+   these checks.
+6. **Repair the owning layer.** Fix shared problems in the shared token or component, and page-only
+   problems in that page's styles. Avoid accumulating higher-specificity global overrides. Trace
+   each adjustment through the affected page families and recheck their visual rhythm and working
+   interactions, including CMS editing and submission/publication flows when affected.
+
+During execution, establish the page task and reading focus, extract the reference's overall
+relationships, and build the shared foundation. Validate a representative page with real content
+before expanding components and page families, then review each affected page's responsive and
+interactive states. Return mismatches to their specification and styling owner and retest the
+affected scope.
+
+Carry these decisions into the generated agent's change budget, engineering constraints, component
+specifications, and the concrete visual-review questions in Phase 5 of the template. Keep existing
+quantitative gates for source-locked regions; masking an approved difference does not verify its
+new design. Retain fully loaded screenshots and actual interaction evidence, distinguishing product
+defects from capture timing and fixture limitations. Earlier completion reports are historical
+evidence, not a new QA pass. These principles do not waive discovery, data mapping, source evidence,
+or runtime verification.
+
 ## Step 3: Perform Read-Only Scope Discovery
 
 Browser automation is mandatory. Before writing the agent:

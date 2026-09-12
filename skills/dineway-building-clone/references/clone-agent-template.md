@@ -35,14 +35,12 @@ errors, decisions, gate evidence, and verification results under `.plan/{{CLONE_
 
 | Source URL | Scope | Explicit parent | Preserved state | Normalized pathname | Discovery decision |
 | ---------- | ----- | --------------- | --------------- | ------------------- | ------------------ |
-
 {{SOURCE_URL_PLAN_ROWS}}
 
 ## Route and Artifact Plan
 
 | Source URL | Scope | Explicit parent | Destination route | Route family | Dineway mapping | site-key | page-key | Research root | Screenshot root | Component namespace | Asset namespace | Collision resolution |
 | ---------- | ----- | --------------- | ----------------- | ------------ | --------------- | -------- | -------- | ------------- | --------------- | ------------------- | --------------- | -------------------- |
-
 {{ROUTE_AND_ARTIFACT_ROWS}}
 
 Every row must identify whether it is explicit or discovered, the explicit parent when discovered,
@@ -55,28 +53,24 @@ screenshot root, component namespace, asset namespace, and any collision resolut
 
 | Page URL | Surface | Location/endpoint | Transport method | Operation type | Access | Parameters/state | Pagination | Filter/sort | Response entity | UI consumer | Evidence |
 | -------- | ------- | ----------------- | ---------------- | -------------- | ------ | ---------------- | ---------- | ----------- | --------------- | ----------- | -------- |
-
 {{SOURCE_DATA_LAYER_ROWS}}
 
 ### Source Page Content Closure
 
 | Page URL | HTML document surface | Visible entity | Visible field refs | Visible record IDs | Stable selectors | Evidence |
 | -------- | --------------------- | -------------- | ------------------ | ------------------ | ---------------- | -------- |
-
 {{SOURCE_PAGE_CONTENT_ROWS}}
 
 ### Source Field Inventory
 
 | Source field ref | Source entity | Source path | Observed type | Nullable | Data class | Observed in-scope values | Identifier role | Enum/date semantics | Relationship/cardinality | Locale/status | Media shape | UI consumer | Evidence |
 | ---------------- | ------------- | ----------- | ------------- | -------- | ---------- | ------------------------ | --------------- | ------------------- | ------------------------ | ------------- | ----------- | ----------- | -------- |
-
 {{SOURCE_FIELD_INVENTORY_ROWS}}
 
 ### Source Record Inventory
 
 | Source entity | Source record ID | Ordered field tuple (compact JSON by sourceRef) | UI consumer | Evidence |
 | ------------- | ---------------- | ----------------------------------------------- | ----------- | -------- |
-
 {{SOURCE_RECORD_INVENTORY_ROWS}}
 
 For every planned page, browser-extract a complete visible-content manifest before modeling APIs:
@@ -127,19 +121,16 @@ The completed agent must include concrete mapping tables with, at minimum:
 
 | Source entity | Source location/API | Dineway owner | Collection/section/setting/menu | Route consumer | Evidence |
 | ------------- | ------------------- | ------------- | ------------------------------- | -------------- | -------- |
-
 {{SOURCE_ENTITY_MAPPING_ROWS}}
 
 | Source field ref/path | Owner kind | Owner key | Target path | Canonical Dineway CMS field name/label | Runtime storageSlug | Dineway type | Required/nullability | Validation/options | Relationship/cardinality | Locale/status | Media ownership/source | Seed/render consumer | Evidence |
 | --------------------- | ---------- | --------- | ----------- | -------------------------------------- | ------------------- | ------------ | -------------------- | ------------------ | ------------------------ | ------------- | ---------------------- | -------------------- | -------- |
-
 {{SOURCE_FIELD_MAPPING_ROWS}}
 
 ### Source Record Binding Plan
 
 | Source entity | Source record ID | Owner kind | Owner key | Seed JSON Pointer | Evidence |
 | ------------- | ---------------- | ---------- | --------- | ----------------- | -------- |
-
 {{SOURCE_RECORD_BINDING_ROWS}}
 
 Every visible source-backed entity and field must appear exactly once as an owned setting, menu,
@@ -306,6 +297,13 @@ Only differences listed as approved may diverge from the source. Rebranding is n
 invent a new information architecture, layout, content section, palette, type scale, interaction,
 or responsive behavior. Mask approved visual differences explicitly during image comparison.
 
+For an explicitly approved adaptation, state which source relationships are being carried across
+and which target identity, content, routes, and behavior are retained. Give each changed region
+concrete acceptance criteria grounded in the source observations and the target's page task.
+Masks identify allowed differences; they do not prove that the adapted region is well designed.
+Keep quantitative comparison for source-locked regions and verify approved regions against their
+recorded geometry, hierarchy, content, and interaction requirements.
+
 ## Engineering Constraints and Verification
 
 {{ENGINEERING_CONSTRAINTS}}
@@ -325,6 +323,11 @@ Before writing frontend code, load `$dineway-frontend-design`, but use it only i
 mode. The observed source is the named aesthetic direction and the source's measured typography,
 color, spacing, composition, motion, and detail treatment are binding. Do not use that skill to
 choose a new aesthetic, make the clone more distinctive, or apply generic Dineway styling.
+
+The source or approved adaptation specifications take precedence over that skill's creative
+suggestions, font preferences, and generic size limits. On an existing product, apply differences
+only within the change budget and keep its protected brand and working flows intact. Use the
+frontend skill's composition and refinement methods to execute the specification precisely.
 
 ### Dineway Site Construction
 
@@ -624,6 +627,25 @@ unapproved source API; seed or manage the observed public content through Dinewa
 
 Do not dispatch component builders until the origin's design tokens, font strategy, shared layout, route plan, Dineway content model, seed/schema, generated types, shared assets, and shared components are stable.
 
+For an existing-product migration, compare the current target's shell and representative page
+families with the reference before expanding component work. Establish content width, navigation
+boundaries, type hierarchy, section spacing, card density, and control scale together. Compare the
+affected home, list, detail, profile, and editing pages side by side. Local component polish should
+support the page and site's overall hierarchy, density, and reading rhythm.
+
+Identify whether an inconsistency comes from a shared token, a component, or a page-specific rule.
+Repair it at that owner within the approved scope; avoid accumulating higher-specificity global
+overrides. Preserve the role and visual weight of equivalent headings, controls, and content groups
+across the affected product flows, while retaining purposeful differences between page families.
+Recheck current behavior when continuing earlier work; prior green gates do not validate new changes.
+
+For an approved migration, use this sequence within the existing phases: establish each page's
+task and reading focus; extract the reference's overall relationships; build the shared foundation;
+assemble and browser-review a representative page with real content; then expand the remaining
+components and page families. Review responsive and interactive states throughout this work and
+again after assembly. Return mismatches to their specification and styling owner and retest the
+affected scope.
+
 ### 5. Extract appearance and behavior
 
 For every component, capture exact computed styles and what changes on scroll, hover, click, resize, or time. Record the trigger, both states, and transition duration/easing. Detect scroll snapping, sticky regions, parallax, viewport reveals, carousels, modals, dropdowns, tabs, and smooth-scroll libraries.
@@ -693,6 +715,21 @@ Extract and record:
 - **Favicons and metadata:** Download exact assets and map editable identity into Dineway settings.
 - **Global UI behavior:** Scrollbars, scroll snap, keyframes, overlays, filters, theme changes, and smooth-scroll libraries (Lenis, Locomotive Scroll — check for `.lenis` class or custom scroll container wrappers).
 - **Content families:** Repeated page shapes, editorial fields, taxonomy signals, navigation structures, and embedded repeaters that must become Dineway-managed data.
+- **Visual relationships:** Record the main focal point, reading order, action placement, container alignment, heading/body hierarchy, image proportions, and spacing within versus between groups. Explain how these observed relationships work together. For approved adaptations, record how they fit the target's content and tasks; a palette or border-radius match alone is insufficient.
+
+Explain the reference's choices in the specification: what photos, titles, body copy, search,
+buttons, and whitespace each do for the reader. A photo-led directory may use photos to attract
+attention, titles to explain content, search and buttons to guide action, and whitespace to
+separate roles. Verify the actual source relationships before applying them to the target's tasks;
+this example is not a prescription for every site.
+
+For approved adaptations, assign a main reading focus and next action, with secondary information
+given appropriate weight. Give large headings, accent colors, shadows, decoration, and color bands
+an identifiable purpose. When several elements compete for the same attention, revisit hierarchy,
+grouping, and spacing before adding another treatment. Reading tasks and content length determine
+scale; smaller text and fewer colors are not automatic improvements. Keep body and supporting text
+readable. Record any size, color, or layout change in the approved specifications; these principles
+do not permit redesigning source-locked regions.
 
 ### Mandatory interaction sweep
 
@@ -1153,6 +1190,15 @@ After all section components are integrated:
 9. Confirm every previously existing route remains present.
 10. Run `pnpm typecheck` and `pnpm build`.
 
+Before expanding an approved shared presentation change across the remaining page families,
+inspect a representative assembled page with its mapped real content. Check long titles, actual
+image crops and proportions, actual record counts, sparse results, relevant empty states, and
+content-length changes across supported languages. Keep images, captions, and links paired with
+their record. Preserve CMS editing bindings, Portable Text, and counts derived from real content
+relationships. Do not substitute idealized placeholder content to make the layout pass. Then check
+the other affected families together so discovery, detail, and editing flows retain their intended
+visual relationships.
+
 ## Phase 5: Visual and Dineway QA
 
 Do not declare completion after assembly.
@@ -1180,6 +1226,29 @@ Do not declare completion after assembly.
     generated artifact; completion must fail if the runtime proof or trusted local URL is absent.
 11. Validate `seed/seed.json`, regenerate types, and rerun typecheck/build.
 12. Verify `/robots.txt`, `/sitemap.xml`, and `/schemamap.xml` and confirm public URLs match the source route map.
+
+During this review, inspect the relationships between components as well as individual matches:
+heading/action wrapping, reading order, image height and crop, content-group spacing, and the
+visibility of the next action, including horizontal overflow. On the local target, actually read,
+scroll, filter, type, and use the keyboard at desktop, tablet, and mobile widths. Exercise relevant
+existing menus, focus and validation, forms, progress, error/recovery, and preview states. For
+profile, recommendation, guide, or venue-submission flows in scope, include enrichment-stage feeds,
+recovery, and draft previews where present. A passing build or default-state screenshot does not
+establish that these flows work.
+
+Record concrete answers in the visual review:
+
+- What does the user see first, read next, and do to complete the main task?
+- Do adjacent elements compete for the same level of attention? Which information should be secondary?
+- Do longer content, supported-language changes, or narrower screens break the hierarchy or hide actions?
+- Do transitions from public pages into profile, editing, and generation flows retain the intended
+  shared design language while supporting each task?
+
+Trace a mismatch back to its specification and styling owner, then retest the affected scope. For
+approved adaptations, check the changed regions against the acceptance criteria in the change
+budget without claiming pixel equality for different content or layouts. Retain screenshots after
+relevant images and fonts finish loading, together with actual interaction evidence. Distinguish
+product defects from capture timing and fixture limitations in that evidence.
 
 Only finish when the clone is visually faithful and the Dineway content/runtime contract works.
 

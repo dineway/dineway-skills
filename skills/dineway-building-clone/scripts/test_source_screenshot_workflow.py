@@ -139,6 +139,47 @@ class SourceScreenshotWorkflowTests(unittest.TestCase):
 				self.assertEqual(screenshot.width, 320)
 				self.assertEqual(screenshot.height, metadata["document"]["scrollHeight"])
 
+	def test_prepared_page_requires_exact_state_and_keeps_context_for_batch_capture(self) -> None:
+		with tempfile.TemporaryDirectory() as directory:
+			output = Path(directory) / "prepared.png"
+			program = """
+import assert from 'node:assert/strict';
+import { chromium } from '@playwright/test';
+const { capturePreparedPage } = await import(process.env.CAPTURE_MODULE);
+const browser = await chromium.launch();
+try {
+  const context = await browser.newContext({ viewport: { width: 320, height: 180 }, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  await page.goto(process.env.FIXTURE_URL);
+  const options = { url: process.env.FIXTURE_URL, expectedUrl: process.env.FIXTURE_URL, output: process.env.OUTPUT, width: 320, height: 180, settleMs: 100, timeoutMs: 15000 };
+  await assert.rejects(capturePreparedPage(page, { ...options, expectedUrl: process.env.FIXTURE_URL + 'login' }), /expected source state/);
+  await assert.rejects(capturePreparedPage(page, { ...options, expectedUrl: undefined }), /explicit expectedUrl/);
+  await page.evaluate(() => { document.body.dataset.prepared = 'yes'; });
+  await capturePreparedPage(page, options);
+  assert.equal(page.isClosed(), false);
+  assert.equal(await page.locator('body').getAttribute('data-prepared'), 'yes');
+  await page.setViewportSize({ width: 390, height: 240 });
+  await assert.rejects(capturePreparedPage(page, options), /exact viewport/);
+  await capturePreparedPage(page, { ...options, width: 390, height: 240, output: process.env.OUTPUT.replace('.png', '-mobile.png') });
+  const retina = await browser.newContext({ viewport: { width: 320, height: 180 }, deviceScaleFactor: 2 });
+  const retinaPage = await retina.newPage(); await retinaPage.goto(process.env.FIXTURE_URL);
+  await assert.rejects(capturePreparedPage(retinaPage, options), /devicePixelRatio 1/);
+} finally { await browser.close(); }
+"""
+			import os
+			result = subprocess.run(
+				["node", "--input-type=module", "-e", program], cwd=SCRIPT_DIR.parents[2],
+				env={**os.environ, "CAPTURE_MODULE": CAPTURE_SCRIPT.as_uri(), "FIXTURE_URL": f"{self.base_url}/", "OUTPUT": str(output)},
+				capture_output=True, text=True, timeout=60,
+			)
+			self.assertEqual(result.returncode, 0, result.stderr)
+			for path, width in [(output, 320), (output.with_name("prepared-mobile.png"), 390)]:
+				metadata = json.loads(path.with_suffix(".capture.json").read_text())
+				self.assertTrue(metadata["readiness"]["documentHeightStable"])
+				self.assertEqual(metadata["readiness"]["failedImages"], [])
+				with Image.open(path) as image:
+					self.assertEqual(image.size, (width, metadata["document"]["scrollHeight"]))
+
 	def test_fails_closed_when_a_rendered_image_is_broken(self) -> None:
 		with tempfile.TemporaryDirectory() as directory:
 			output = Path(directory) / "broken.png"
