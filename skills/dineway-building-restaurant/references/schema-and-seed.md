@@ -2,11 +2,11 @@
 
 The seed file (`seed/seed.json`) defines the site's entire schema and initial restaurant content. It's applied on first run or via `npx dineway seed seed/seed.json`.
 
-Use this reference for mechanics. For restaurant sites, Blog, News, Menu, Reviews, and Gallery are required managed columns. Choose fields from the real enriched place data and do not create portfolio or placeholder demo structures.
+Use this reference for mechanics and [restaurant-model.md](restaurant-model.md) for content ownership. Seed genuine published content for the required `menu`, `reviews`, and `gallery` collections, plus auxiliary types actually selected in `Site Architecture`. Schema-only or static-only replacements are incomplete. Do not force Blog/News or create empty optional collections.
 
-For restaurant sites, `seed/seed.json` must include non-empty published content arrays for `blog`, `news`, `menu`, `reviews`, and `gallery`. Creating a collection schema without published seed content is incomplete.
+The primary navigation menu links to `/menu`, `/reviews`, `/gallery`, and `/visit`, with optional routes only when enabled. Homepage anchors may supplement these links but cannot replace them.
 
-The primary navigation menu in the seed must link required columns to `/menu`, `/reviews`, `/gallery`, `/blog`, and `/news`. Homepage anchors may be extra preview links, but they must not replace those route links.
+Use reusable records for Advantages, special touches, experiences, and visit tips. Public data contains editorial copy, real attributions, media and content references; the private planning index holds evidence audit metadata. For an evidence-limited menu, a supported CMS menu introduction is preferable to invented dishes. A lack of real reviews or usable photos remains a content blocker, not permission to seed fake entries.
 
 ## Seed File Structure
 
@@ -49,7 +49,9 @@ Collections define content types. Each collection becomes a database table (`ec_
 Every routable restaurant collection must include:
 
 - `supports` with `seo`, so `/sitemap.xml` includes published entries and editors can manage SEO fields.
-- `urlPattern` with `{slug}`, so `/schemamap.xml` and URL helpers can resolve the public detail route. Match the Astro route exactly, such as `/blog/{slug}`, `/news/{slug}`, `/menu/{slug}`, `/reviews/{slug}`, or `/gallery/{slug}`.
+- `urlPattern` with `{slug}`, matching a real public detail route, such as `/journal/{slug}`. Do not advertise routes that the site does not implement.
+
+Embedded collections can omit `urlPattern` and SEO support. A review, photo, menu row, or tip does not need a standalone detail page merely because it is CMS-managed. The independent parent pages still require page-level SEO and discovery. Do not call entry URL helpers or emit sitemap links for records that have no public detail route.
 
 ### Collection Supports
 
@@ -103,10 +105,10 @@ Fields can have:
 
 ### Common Field Patterns
 
-**Blog post:**
+**Optional Journal entry:**
 
 ```json
-"urlPattern": "/blog/{slug}",
+"urlPattern": "/journal/{slug}",
 "supports": ["drafts", "revisions", "search", "seo"],
 "fields": [
 	{ "slug": "title", "label": "Title", "type": "string", "required": true, "searchable": true },
@@ -116,20 +118,20 @@ Fields can have:
 ]
 ```
 
-**Portfolio project:**
+**Reusable Advantage or special touch (embedded `highlights` collection):**
 
 ```json
+"supports": ["drafts", "revisions"],
 "fields": [
-	{ "slug": "title", "label": "Title", "type": "string", "required": true, "searchable": true },
-	{ "slug": "featured_image", "label": "Featured Image", "type": "image", "required": true },
-	{ "slug": "client", "label": "Client", "type": "string" },
-	{ "slug": "year", "label": "Year", "type": "string" },
-	{ "slug": "summary", "label": "Summary", "type": "text", "searchable": true },
-	{ "slug": "content", "label": "Content", "type": "portableText", "searchable": true },
-	{ "slug": "gallery", "label": "Gallery", "type": "json" },
-	{ "slug": "url", "label": "Project URL", "type": "string" }
+	{ "slug": "title", "label": "Title", "type": "string", "required": true },
+	{ "slug": "kind", "label": "Kind", "type": "string", "required": true },
+	{ "slug": "description", "label": "Description", "type": "text" },
+	{ "slug": "supporting_review", "label": "Supporting review", "type": "reference", "options": { "collection": "reviews" } },
+	{ "slug": "image", "label": "Image", "type": "image" }
 ]
 ```
+
+Use `kind` values `advantage` or `special_touch` in this model. Before publishing an Advantage, require a genuine supporting review and ensure the copy does not overstate it. A special touch also needs evidence in the private index but does not require a fabricated testimonial. Extend with additional real relationships only where the selected design needs them. Use existing seed reference syntax below; do not copy independent review records into each page's content.
 
 **Page (minimal):**
 
@@ -467,19 +469,19 @@ Catches:
 - PortableText not an array or missing `_type`
 - Type mismatches (string vs number, etc.)
 
-For restaurant sites, also validate that each required collection has published content after seeding. For local SQLite projects:
+For restaurant sites, verify the required collections and every selected auxiliary collection have genuine published content and are queried by their intended pages. With the default names on local SQLite:
 
 ```bash
 sqlite3 .dineway/data.db "
-select 'blog', count(*) from ec_blog where status = 'published'
-union all select 'news', count(*) from ec_news where status = 'published'
-union all select 'menu', count(*) from ec_menu where status = 'published'
+select 'menu', count(*) from ec_menu where status = 'published'
 union all select 'reviews', count(*) from ec_reviews where status = 'published'
 union all select 'gallery', count(*) from ec_gallery where status = 'published';
 "
 ```
 
-Every count must be greater than zero.
+Every required count must be greater than zero. Also inspect the actual rows and rendered output: a nonzero count alone does not prove authenticity or correct integration. Validate supporting-review references, disjoint popular/other-favorites food selections, special-touch content, uploaded images, and applicable credits. Check `highlights`, `experiences`, `visit_tips`, and `journal` when the architecture selects them; unused types need not exist.
+
+Validate `/`, `/menu`, `/reviews`, `/gallery`, `/visit`, and every actual optional/detail route in the architecture. Embedded records need no artificial detail route; routable records must resolve and have matching SEO/discovery configuration. Test later review/gallery batches, not just the first query result. Modify and restore a shared record in a local test site to verify that its consumers stay consistent.
 
 ## Applying Seeds
 

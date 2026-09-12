@@ -1,113 +1,94 @@
 # Restaurant Media Pipeline
 
-Restaurant images must be downloaded to local files before design. Gallery is required, so select representative images that show restaurant quality, food, space, service, or atmosphere, then upload Gallery images to Dineway.
+Gallery is a required independent CMS-backed page. Build an expanded, curated collection from the place payload, official restaurant pages, and the [Google Maps browser supplement](google-maps-browser-enrichment.md). Download and inspect image bytes before using them in the site.
 
-## Rules
+## Sources and Coverage
 
-1. Read media candidates from the enriched JSON in this order:
-   - `placeDetails.placeImageList`
-   - `placeDetails.photoList`
-   - `placeDetails.photos`
-   - `placeDetails.reviewImageList`
-   - `placeDetails.extImageReviews[].imageUrls`
-   - `placeDetails.menuImages`
-   - `placeDetails.ugcPosts[].imageUrls`
-   - `placeDetails.aiPhotoList`
-   - video thumbnails or downloadable stills from `placeDetails.reviewVideoList`, `placeDetails.videoList`, `placeDetails.placeVideoList`, `placeDetails.extraVideos`, and `placeDetails.ugcPosts`
-   - selected-place image fallbacks
-2. Download actual image bytes to local files before Astro design implementation.
-3. Put static Astro images under `public/assets/<restaurant-slug>/` and reference them in markup as `/assets/<restaurant-slug>/<file>`. Do not put browser-referenced static images in a root `assets/` directory.
-4. Upload selected local files into the running Dineway site with `dineway media upload` for Gallery and any other CMS-managed image fields.
-5. Use the uploaded media values in Dineway image fields.
-6. Do not use remote image URLs, Google photo references, photo resource names, or API tokens in markup.
-7. If a photo entry has no usable image URL, skip it and record the reason.
-8. Every retained image needs specific alt text grounded in the place data and visible image context when inspected.
-9. Preserve media context in the manifest when possible: source field, source review/post/menu item, author/title, review link, and intended use (`hero`, `gallery`, `menu`, `review`, `blog`, `news`, or `design-only`).
+Consider all present sources: `placeImageList`, `photoList`, `photos`, `reviewImageList`, `extImageReviews`, `menuImages`, `ugcPosts`, `aiPhotoList`, usable video stills, selected-place fallbacks, first-party website images, and browser-observed Maps photos.
 
-Do not treat all media equally. Menu images should primarily support Menu/Gallery, review images should support Reviews/Gallery/Blog, post media should support Blog/News/Gallery, and place images should drive hero/atmosphere/gallery decisions.
+The API helper ranks known candidates by source priority and URL resolution hints. Ranking is an acquisition aid, not an instruction to select the first N. The current Agent adds official/browser material and judges actual image quality, guest value, and coverage. Inspect `aiPhotoList` candidates like any other source; a field name is neither proof of authenticity nor permission to present generated imagery as a real visit.
 
-## Two-Phase Workflow
+Cover food/drinks, interiors, exterior/arrival, atmosphere, and supported special details as available. Menu images can document menu facts when legible; review images can supply visual context; photos of tables or corridors cannot establish capacity, wheelchair measurements, allergy safety, or sound levels.
 
-### Phase 1: Download with Quality Ranking
+## 1. Download Source Batches
 
-Download up to 20 image candidates, ranked by source priority and resolution signals. The script sorts candidates by:
-
-1. **Source priority** — `placeImageList` (100) > `photoList` (90) > `photos` (85) > `menuImages` (75) > `reviewImageList` (70) > `extImageReviews` (65) > `ugcPosts` (50) > `aiPhotoList` (40) > video thumbnails (30) > selected-place fallbacks (20)
-2. **URL resolution hints** — parsed from Google image URL size parameters (e.g. `=w1200-h800`, `=s1600`)
-3. **Original order** — stable tiebreaker
-
-After download, the script reads actual image dimensions (JPEG/PNG/WebP header parsing) and records them in the manifest alongside file size, priority score, and source path.
+For the existing place payload:
 
 ```bash
 node skills/dineway-building-restaurant/scripts/restaurant_site_data.js download \
   places/PLACE_ID.json \
-  --out public/assets/restaurant-slug \
-  --max 20 \
-  --manifest .plan/dineway-building-restaurant/restaurant/downloaded-media.json
+  --out public/assets/restaurant-slug/place \
+  --max 40 \
+  --manifest .plan/restaurant-slug/place-media.json
 ```
 
-The manifest records downloaded files with their dimensions, priority, and resolution hints, plus skipped candidates.
+`--max` controls this helper invocation, not the whole site. Its default remains a batch size; use an explicit value appropriate to the candidate pool. Browser supplementation initially targets about 30–50 distinct candidates across all sources when available. Neither that target nor the former 8–10-image selection is a fixed Gallery limit.
 
-### Phase 2: Agent Curation
+Download official/browser candidates with the available browser's supported save operation or a permitted download of a known rendered image URL. The helper does not consume `google-maps-evidence.json`; do not pass that artifact as a Places payload or pretend the helper already imported it. Keep these downloads under `public/assets/<restaurant-slug>/official/` and `.../maps/`, using unique filenames to avoid overwriting another batch.
 
-After downloading, the agent inspects the actual image content by viewing the downloaded files. Select 8-10 images based on:
+- Validate the resulting file is an image, record actual dimensions and size, and inspect it. Reject failed downloads, HTML responses, tiny stretched thumbnails, unrelated businesses, and duplicates.
+- If image bytes are unavailable, record the failure; a Maps UI screenshot or hotlinked image is not an acceptable substitute.
+- Keep static assets in `public/assets/`, referenced publicly as `/assets/...`; do not use filesystem paths in generated HTML.
+- Never put Google photo resource names, remote photo URLs, tokens, or scraping notes into site markup or CMS image fields.
 
-- **Visual quality** — sharp, well-lit, properly composed
-- **Content diversity** — cover food, interior, exterior, atmosphere, service
-- **Resolution** — prefer higher resolution images (check `width`, `height`, `size` in manifest)
-- **Intended use** — ensure coverage for hero, gallery, menu, review, and blog needs
+## 2. Merge and Deduplicate the Manifest
 
-Mark selected images using the `select` subcommand:
+Keep source manifests unchanged. Create `.plan/<restaurant-slug>/downloaded-media.json` with a `restaurant` identity object, a `downloaded` array, and a `skipped` array. Add all successful local files from API, official, and browser sources before selecting. This is a local Agent merge using the helper's existing manifest shape, not a new network service.
+
+Each `downloaded` item needs:
+
+| Field                                 | Purpose                                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------------------- |
+| `index`                               | Unique 1-based index in the merged array; reindex after merging                       |
+| `path`                                | Existing local image path, consistently absolute or relative to the site workspace    |
+| `sourceUrl`, `sourcePath`             | Observed image URL when available and source JSON/capture/page locator; never guessed |
+| `mimeType`, `size`, `width`, `height` | Actual file properties; unavailable dimensions remain null                            |
+| `alt`, `caption`                      | Specific customer-safe descriptions written after inspection                          |
+| `intendedUse`                         | Planned page/module use, such as hero, gallery, menu, reviews, or experience          |
+
+Retain additional context such as source page, evidence IDs, review/dish relationship, theme, capture time, and contributor/credit when available. Selection preserves these extra fields. Keep required public credit separate from internal source-analysis notes.
+
+Deduplicate by known photo identity and downloaded content hash, then inspect near-identical crops/resolutions visually. URL equality alone misses the same photo at several sizes. Keep the best useful rendition and all source relationships. A photo can support multiple pages through the same media record; do not add it twice to Gallery because it was also selected as hero or attached to two sources.
+
+The `skipped` array records source locators and concrete reasons such as download failure, duplicate, wrong branch, unusable size, or inappropriate content. Counts must distinguish candidates, downloaded files, unique images, selected images, and uploaded media.
+
+## 3. Curate for the Guest's Questions
+
+View the actual local images. Select by quality, subject diversity, useful resolution, and relevance to the JTBD/content plan. Use the strongest opening set and enough additional distinct photos for meaningful browsing. Do not pad to a target or arbitrarily stop at eight or ten when more useful material exists.
+
+Write alt text from visible content and confirmed facts. Do not assign an exact dish name, ingredient, named person, or event from appearance alone. Preserve applicable contributor credits and source links in the appropriate public fields; do not invent attributions or erase visible watermarks to misrepresent ownership.
+
+Mark actual selected indices with the helper, for example:
 
 ```bash
 node skills/dineway-building-restaurant/scripts/restaurant_site_data.js select \
-  .plan/dineway-building-restaurant/restaurant/downloaded-media.json \
+  .plan/restaurant-slug/downloaded-media.json \
   --pick 1,3,5,6,8,10,12,15 \
-  --out .plan/dineway-building-restaurant/restaurant/selected-media.json
+  --out .plan/restaurant-slug/selected-media.json
 ```
 
-The `--pick` flag accepts comma-separated 1-based indices matching the `index` field in the manifest. The output manifest marks each item with `selected: true/false`.
+This list is illustrative, not a required selection count. Check that every chosen index maps to an inspected file and `selectedCount` is positive. Do not call upload for a zero-selection manifest; the helper treats a manifest without any `selected: true` as an unfiltered upload.
 
-### Phase 3: Upload for CMS-Managed Content
+## 4. Upload and Wire the Selected Media
 
-Start the local Dineway dev server first if needed:
+Start the local dev server with `bgproc` if needed, then upload:
 
 ```bash
 bgproc start -n devserver -w -- pnpm dev
-```
-
-Then upload. When the manifest contains `selected` flags, only selected items are uploaded:
-
-```bash
 node skills/dineway-building-restaurant/scripts/restaurant_site_data.js upload \
-  .plan/dineway-building-restaurant/restaurant/selected-media.json \
+  .plan/restaurant-slug/selected-media.json \
   --url http://localhost:4321 \
-  --out .plan/dineway-building-restaurant/restaurant/uploaded-media.json
+  --out .plan/restaurant-slug/uploaded-media.json
 ```
 
-If no items have the `selected` flag (backwards compatible), all items are uploaded.
+Use the returned `mediaValue` objects in CMS image fields and render with `Image` from `dineway/ui`. Static Astro promotional pages may use their real `/assets/...` files. Map upload results back to selected-manifest items by `localPath`; the upload result is not a replacement for the full source/credit/evidence manifest. Seed captions, themes, credits, and relationships from that manifest alongside the uploaded image object.
 
-The upload output includes `mediaValue` objects suitable for Dineway content:
+Only selected successful uploads can become published Gallery entries. For failures, retry the affected local files within the existing upload workflow; do not redownload or re-upload already successful items blindly. Keep unresolved upload errors visible in planning and do not claim a complete CMS Gallery until its planned files resolve.
 
-```json
-{
-	"provider": "local",
-	"id": "01...",
-	"filename": "restaurant-photo-01.jpg",
-	"mimeType": "image/jpeg",
-	"width": 1200,
-	"height": 800,
-	"alt": "Restaurant name dining room photo",
-	"meta": {
-		"storageKey": "01....jpg"
-	}
-}
-```
+## 5. Render and Verify the Gallery
 
-Use those objects in image fields and JSON gallery blocks. Render Dineway-managed images with `Image` from `dineway/ui`. Static Astro promotional pages may keep using `/assets/...` paths backed by files in `public/assets/...`.
-
-## Fallbacks
-
-- If there are no downloadable images, record the blocker and ask for restaurant photos before final delivery because Gallery is required. Do not use fake or stock imagery.
-- If only one representative image downloads, still create Gallery with that image and clear source-grounded captioning.
-- Gallery is required. Use the strongest available downloaded images, but do not pad it with low-quality or irrelevant images.
+- Keep `/gallery` independent and linked in navigation/footer even when Home has a preview.
+- Group by actual subjects and expose the expanded collection through accessible pagination or progressive browsing. Server-render the first batch and provide crawlable continuation links; verify later batches as well as the opening grid.
+- Use useful image sizes, explicit dimensions/aspect ratios, and lazy loading for non-critical images. Do not eagerly fetch all full-resolution assets for thumbnails or a lightbox.
+- Verify captions, alt text, public credits, and Menu/Reviews relationships, with no unrelated stock/generated photos or repeated filler.
+- If only a few good images exist, use those honestly. If none can be obtained after the available source attempts, record the blocker and request restaurant photos before final delivery. Do not remove Gallery, invent imagery, or report successful browser supplementation without saved evidence.

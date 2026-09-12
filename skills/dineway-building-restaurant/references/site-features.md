@@ -294,6 +294,8 @@ Requirements for every routable restaurant CMS collection:
 - `urlPattern` matches the rendered Astro route and contains `{slug}`
 - The public detail route renders the collection entry and passes `content: { collection, id, slug }` to `createPublicPageContext`
 
+Embedded restaurant records (reviews, Gallery images, menu rows, Advantages, and tips) need no artificial detail routes or SEO support. Keep SEO on their real parent pages and on optional Journal/Experience detail entries that actually have routes. Verify discovery does not advertise default entry URLs for non-routable records.
+
 Production requirements:
 
 - Set `siteUrl` or `DINEWAY_SITE_URL` when the public origin differs from the request origin.

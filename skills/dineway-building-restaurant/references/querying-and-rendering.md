@@ -96,6 +96,27 @@ Astro.cache.set(cacheHint);
 
 Always call `Astro.cache.set(cacheHint)` -- it enables automatic cache invalidation when content changes.
 
+## Restaurant Modules and Expanded Collections
+
+Follow [restaurant-model.md](restaurant-model.md) for page/collection ownership. `/menu`, `/reviews`, and `/gallery` are independent pages even when their records also appear on Home. Do not assume a collection entry has a detail URL: embedded reviews, images, menu rows, and tips can be rendered directly on parent pages without entry URL helpers or synthetic detail links.
+
+- Query published `highlights` for Advantages and special touches, resolving their real supporting review references. Reuse the same records for Reviews/Advantages and Menu/Beyond the menu as appropriate; do not duplicate testimonial data or blindly reuse a single review for unrelated claims.
+- Render Menu's supported popular/other-favorites selections from distinct menu records, with additional menu data where available. Beyond the menu comes from experience/special-touch records, not a duplicate dish list.
+- Combine repeated content through shared components and real record IDs. A saved reference is not automatically an expanded review; resolve it through the runtime's supported queries and preserve original attribution. Missing/broken references are validation failures, not permission to generate replacement reviews.
+- Register cache dependencies for all queried collections/records using the supported Astro cache API, including records resolved for another module. Avoid a hand-built long-lived cache that leaves embedded reviews or tips stale. Verify a local edit reaches every placement and restore the edited value.
+
+### Reviews and Gallery Pagination
+
+Use `getDinewayCollection` cursor pagination rather than silently displaying only the default batch. A reasonable first page is 20 entries, adjusted to the layout and runtime limits. Pass the returned `nextCursor` to the next request, keep filtering and sort order consistent, and use a stable tie-breaker through the runtime's pagination semantics.
+
+Server-render the first batch and provide an ordinary, properly URL-encoded continuation link to the same public page with its cursor and theme query parameters. Optional load-more controls can enhance that link but must not make content accessible only through client JavaScript. When a theme changes, reset its cursor. Stop only when there is no `nextCursor`; do not loop on an unchanged cursor or treat a query error as an empty successful collection.
+
+Resolve Advantage-linked reviews independently of which review page is currently visible. Selected menu/supporting evidence must not disappear just because its review is beyond the current batch. Fetch only the related records needed for the current view, not the entire review/photo collection on every request.
+
+Gallery thumbnails use appropriately sized media with dimensions and lazy loading; retrieve larger images only when needed for viewing. Preserve actual credits and content relationships from the selected media manifest when seeding. A successful media upload alone does not transfer all provenance/credit fields automatically.
+
+Validation must include a collection larger than the chosen batch: follow continuation links, check that records are neither lost nor repeated, change/reset a theme, and inspect the last page. Confirm shared records remain consistent after a local CMS edit and that the five core navigation links still resolve.
+
 ## Rendering Portable Text
 
 ### PortableText component

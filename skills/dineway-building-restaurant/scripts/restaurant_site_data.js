@@ -369,7 +369,7 @@ function classifyMediaUse(sourcePath) {
 	const lower = String(sourcePath).toLowerCase();
 	if (lower.includes("menu")) return "menu";
 	if (lower.includes("review") || lower.includes("extimagereviews")) return "review";
-	if (lower.includes("ugcposts") || lower.includes("post")) return "blog";
+	if (lower.includes("ugcposts") || lower.includes("post")) return "gallery";
 	if (lower.includes("video")) return "gallery";
 	if (lower.includes("placeimagelist") || lower.includes("photolist") || lower.includes("photos")) {
 		return "gallery";
@@ -587,15 +587,10 @@ function normalizeRestaurant(payload, sourcePath = "") {
 	};
 }
 
-function recommendPages() {
-	return ["home", "blog", "news", "menu", "reviews", "gallery", "contact"];
-}
-
 function summarize(payload, sourcePath) {
 	const restaurant = normalizeRestaurant(payload, sourcePath);
 	return {
 		restaurant,
-		recommendedPages: recommendPages(restaurant),
 		decisionInputs: {
 			hasPhone: Boolean(restaurant.phone),
 			hasHours: restaurant.hours.length > 0,

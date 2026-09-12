@@ -1,110 +1,77 @@
-# SEO and Design Rules
+# SEO, Guest-Facing Design, and Copy
 
-## Local SEO
+Use the shared [JTBD content foundation](jtbd-and-content-enrichment.md) and [restaurant model](restaurant-model.md) to determine what each page helps a guest decide. The foundation informs design; its internal labels are not the site's voice.
 
-Every generated page must have:
+## Information Architecture and Visual Direction
 
-- One `<h1>`.
-- Page-specific `<title>` and meta description.
-- Crawlable navigation and contextual internal links.
-- Mobile-first layout.
-- Lazy-loaded non-critical images.
+Require Home, Menu, Reviews, Gallery, and Visit at `/`, `/menu`, `/reviews`, `/gallery`, and `/visit`. Keep Reviews and Gallery independent even when Home uses their content. Primary navigation and footer link to all four non-home core pages. Experience and Journal are enabled only when supported material warrants them; do not force Blog/News.
 
-Use `Restaurant` JSON-LD when restaurant-specific fields are available. Use `LocalBusiness` only when the category is not clearly restaurant/cafe/food. Include only real fields:
+Invoke `$dineway-brainstorming` to compare 2–3 directions within those constraints and automatically choose the best-supported option. Before implementation, record `Design Comparison` and `Site Architecture` in `findings.md`, including routes, modules, CTAs, media coverage, and CMS reuse. Use `$dineway-frontend-design` for the visible Astro implementation.
 
-- `name`
-- `address`
-- `telephone`
-- `aggregateRating.ratingValue`
-- `aggregateRating.reviewCount`
-- `geo.latitude` and `geo.longitude`
-- `url` or `sameAs` for Google Maps/website when present
-- `servesCuisine` or category text when supported by real categories
-- `openingHoursSpecification` only when real hours are present
-- `image` only for downloaded local assets or uploaded media with a resolvable public URL
+Choose hierarchy from actual jobs and inspected imagery, for example:
 
-Do not add JSON-LD properties just because a restaurant schema type supports them. Omit any `menu`, `servesCuisine`, `openingHoursSpecification`, `sameAs`, `acceptsReservations`, `hasMenu`, `makesOffer`, `priceRange`, social profile, reservation, order, or delivery field unless it is present in the enriched JSON or official website extraction and recorded in `findings.md`.
+- Fast takeaway evidence: menu and arrival/order information are prominent; practical portion choice may be more useful than a long atmospheric hero.
+- Supported group or celebration experiences: explain the dining setup, relevant food choices, and real booking guidance with appropriate photos and reviews.
+- A distinctive sensory or interactive experience: use the relevant images and Beyond the menu content to explain what makes the meal memorable.
+- Sparse evidence: concise, fact-led pages with the same core navigation; do not compensate with exaggerated claims or invented optional columns.
 
-Dineway discovery requirements:
+These are design examples, not category-to-service assumptions. Use a restrained 60-30-10 color balance, legible mobile typography, appropriate image density, and distinctive composition grounded in the venue. Do not impose a generic six-card layout, fake imagery, or a CMS-shaped wireframe.
 
-- `siteUrl` or `DINEWAY_SITE_URL` must resolve the public origin for production JSON-LD, sitemap, robots, MCP discovery, and schemamap URLs.
-- Layouts must render `DinewayHead`.
-- Routable CMS collections must include `supports: ["seo"]` and `urlPattern`.
-- Final validation must hit `/robots.txt`, `/sitemap.xml`, and `/schemamap.xml`.
+Reviews must visually connect Advantages to their supporting real reviews, followed by broader themed evidence. Menu distinguishes Most popular items, Other favorites, and Beyond the menu, rendering only supported selections. Gallery uses meaningful groups and more than a token preview when useful media exists. Larger collections need responsive images and accessible continuation, not all full-resolution files loaded at once.
 
-Use enriched local signals outside JSON-LD as well:
+## Local SEO and Discovery
 
-- Use `addressDescriptor.areas` and `addressDescriptor.landmarks` for concise local-area and arrival guidance.
-- Use `googleMapsLinks.directionsUri`, `reviewsUri`, `photosUri`, and `writeAReviewUri` for appropriate CTAs.
-- Use `businessStatus` as an internal guardrail and metadata signal; never imply the restaurant is open if the source says otherwise.
-- Use `postalAddress`, `addressComponents`, coordinates, and category/type labels to make titles, descriptions, contact content, and local SEO specific.
+Every public page needs one `<h1>`, a page-specific title/description, crawlable links, a mobile-first layout, and lazy-loaded non-critical images. Keep the restaurant identity and location consistent without repeating a generic paragraph across pages.
 
-## Information Architecture
+Use `Restaurant` JSON-LD when the business is clearly a restaurant/cafe/food venue, or an appropriate `LocalBusiness` type otherwise. Include only supported factual properties, such as name, address, phone, coordinates, public URL, and observed hours. Sources may be the saved place data, official-page facts, or direct observations of the identified Maps listing recorded in planning.
 
-Compare 2-3 options by invoking `$dineway-brainstorming` before implementation:
+- Include menu details, cuisine, price range, opening hours, reservation status, offers, social profiles, or `sameAs` only when the actual value is supported. JTBD inferences and missing booleans do not create schema facts.
+- If displaying a Google rating/count, retain a pair from the same source observation. Neither the number of captured reviews nor a newly averaged selected sample replaces the business aggregate. Do not imply the site's curated reviews are exhaustive.
+- Images must resolve to real local/uploaded assets on a public origin. No Google resource names, expired remote URLs, or fabricated media.
+- Use address descriptors and actual map/directions links for useful local context and CTAs. Do not invent walking times, free parking, or accessibility guarantees.
+- Use business status as a guardrail; do not advertise a closed venue as currently open. A capture timestamp is not a live opening-state check.
 
-- Compact homepage plus required Blog, News, Menu, Reviews, and Gallery columns for sparse details.
-- Separate Reviews, Menu, Blog, and News pages when source material deserves clearer scan paths.
-- A visually rich Gallery route when downloaded image quality can lift perceived restaurant quality.
+Dineway requirements:
 
-Choose automatically and record the reasoning. Do not ask the user to choose among design options. Stop for user input only when execution is impossible, such as missing restaurant name/city or an unresolved place match.
-
-Build the visible experience Astro-first with `$dineway-frontend-design`. Keep promotional pages and sections as Astro code unless they need ongoing editorial management. Add Dineway CMS for required Blog, News, Menu, Reviews, and Gallery columns.
-
-Blog must reinterpret review themes, `ugcPosts`, place posts, and videos from the restaurant's point of view. News must use menu-update signals, `ugcPosts`, and place posts. Menu must use real menu/menu-update data and review-backed food or experience themes. Reviews must use selected real reviews to create authenticity. Gallery must elevate the design with representative downloaded images, including usable `ugcPosts` media when present.
-
-Implementation may not start until `.plan/<restaurant-slug>/findings.md` has a `Design Comparison` section with 2-3 options, pros/cons, selected recommendation, and dineway-frontend-design execution notes.
-
-## Visual Direction
-
-Infer style from real signals:
-
-- Cafe, bakery, brunch, warm review language: refined local cafe.
-- Restaurant, bar, fine dining, atmosphere/service-heavy reviews: editorial dining or luxury.
-- Takeaway, fast service, convenience-heavy categories/reviews: casual urban service.
-
-Use a 60-30-10 color system with restrained accents. Avoid generic template sections, oversized marketing heroes for operational pages, one-note palettes, fake decorative imagery, and visual claims not supported by data.
-
-Actual UI implementation should produce a distinctive, production-ready restaurant site rather than a CMS-shaped wireframe. Let the restaurant data and downloaded images drive the design before adding Dineway CMS boundaries.
-
-Use enriched media density to drive layout choices. Many strong place/review/menu images can justify a visual Gallery-led design; strong review/post text can justify editorial Blog/Review pathways; structured menu data can justify a Menu-forward navigation path.
-
-## Copy
-
-- Ground all copy in categories, location, ratings, review language, images, and service flags.
-- Short synthesized summaries are allowed when they are clearly inferred from real data.
-- Do not fabricate menu items, FAQs, social proof, external links, press, awards, chef bios, or opening hours.
-- Keep review quotes attributed and concise.
-- Do not fabricate post/video/news recency, menu updates, or specific dishes. If source material is thin, write concise source-grounded content instead of filler.
-- Never expose internal provenance or rule text to visitors. Do not render labels such as "source:", "from public review text", "review-visible facts", "not verified", "for replacement later", "placeholder", "based on extracted comments", or "only from scraped reviews".
-- Rewrite source-grounded insights into polished restaurant-facing copy. The public page should sound like the restaurant's editorial voice, not an audit trail.
-- Validation must include searching rendered source/content for internal-rule phrases and replacing them before delivery.
+- Configure a production public origin using `siteUrl` or `DINEWAY_SITE_URL`.
+- Render `DinewayHead` from the shared layout using a public page context.
+- Routable CMS entries use SEO support, a real matching `urlPattern`, and `content: { collection, id, slug }` in their page context. Embedded records do not require fabricated detail URLs; their parent pages have page-level SEO.
+- Register `seoGraphPlugin()` and the public `/schemamap.xml` proxy according to [configuration.md](configuration.md).
+- Validate actual content/discovery at `/robots.txt`, `/sitemap.xml`, and `/schemamap.xml`, not just successful HTTP responses. Ensure core Astro routes and selected detail routes are discoverable, and no non-existent embedded-record URLs are advertised.
 
 ## Brand Voice and Copy Tone
 
-Before writing public Astro copy or CMS seed content, record a `Brand Voice & Copy Tone Brief` in `.plan/<restaurant-slug>/findings.md`. Base it on the restaurant category, reviews, `ugcPosts`, menu signals, service flags, location, and selected visual direction.
+Before writing public copy or seeds, record `Brand Voice & Copy Tone Brief` in `findings.md`: restaurant-specific voice, first-person usage, warmth, confidence bounded by evidence, description length, and rules for transforming guest evidence into owned copy. Use official brand context plus the observed customer language, not an imported case-study voice.
 
-Apply these tone rules:
+- Use first-person restaurant perspective where natural for owned promotional copy, menu introductions, CTAs, and stories. Keep structured facts and attributed reviews in an appropriate neutral/quoted form.
+- Transform supported themes into specific, concise copy. An observed individual-portion option can support a direct portion-choice statement; a pleasant review cannot support an award claim or a permanent service guarantee.
+- Write confidently only within the evidence's limits. Do not make uncertain claims definitive by deleting qualifications. Narrow the claim, keep it within an accurate attributed experience, or omit it. Useful factual conditions such as published booking terms or dates are allowed.
+- Distinguish a published menu fact from a review mention. Do not turn historical dishes, single complimentary gifts, quick visits, or accommodation anecdotes into current offerings, guaranteed speed, or dietary safety promises.
+- Keep quotations short, exact, contextual, and attributed when names are available. Do not invent authors/avatars. Identify translations appropriately; a paraphrase is not a verbatim quote.
+- Prefer short paragraphs, specific descriptions, and varied relevant evidence over repeated generic praise. Match the language of the site; translate the Menu lens labels faithfully without changing their responsibilities.
+- Keep the voice consistent across Home, Menu, Reviews, Gallery, Visit, optional Experience/Journal, SEO, and CMS excerpts. Let the page's purpose change density, not the restaurant's identity.
 
-- Use first-person restaurant perspective when it sounds natural: "We serve", "Our kitchen", "Our team", and "Join us" are appropriate for owned promotional copy, CTAs, Menu introductions, About/Snapshot sections, Blog, and News. Use neutral third-person only for structured facts, attributed reviews, metadata, and legal/operational clarity.
-- Translate review praise into confident restaurant copy instead of audit-style summaries. For example, a review signal like "Guests love our 8-grain dessert" can become "Indulge in our award-winning 8-grain dessert" only when the award claim is actually supported; otherwise write a confident supported version such as "Indulge in our guest-loved 8-grain dessert."
-- Avoid hedging language in public copy. Do not write "appears to", "seems to", "may offer", "reviewers mention", or "based on reviews". Be definitive about offerings and experiences that are present in the source data; omit uncertain claims instead of qualifying them.
-- Maintain warmth without becoming overly casual. Prefer polished hospitality language over slang, jokes, excessive exclamation, or social-media chatter.
-- Keep descriptions concise and scannable. Favor short paragraphs, focused captions, crisp card copy, and specific menu/review highlights over long generic prose.
-- Use the same voice across Home, Menu, Reviews, Gallery, Blog, News, Contact, SEO descriptions, and CMS excerpts. Adjust density by context, not personality.
+## Customer Visibility Filter
 
-## Customer Visibility Gate
+Apply this before each public title, excerpt, body, review treatment, caption, CTA, and metadata string:
 
-Before generating any public Astro copy or CMS seed content, classify each planned content idea:
+| Decision          | Treatment                                                                                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Customer-safe     | Specific food/experience information, useful arrival guidance, real review attribution, appropriate photo credit, factual dates/conditions, and substantiated stories/updates          |
+| Internal-only     | Evidence IDs, source-field names, extraction method, confidence scores, incomplete coverage, prompt/tool language, planning hypotheses, selection rationales, and implementation notes |
+| Reject or rewrite | Unsupported superlatives or policies, fake recency, placeholder text, audit-style explanations, and language that turns a source limitation into a guest-facing promise                |
 
-- **Customer-safe:** A real guest would naturally expect or benefit from seeing it on a restaurant website. Examples: what the dining experience feels like, signature dishes that exist in source data, useful visit guidance, atmosphere, service strengths, location context, concise attributed review highlights, and polished restaurant updates.
-- **Internal-only:** Useful for planning but inappropriate for visitors. Examples: source/provenance labels, extraction notes, verification caveats, field names, scraper/API language, confidence notes, missing-data warnings, implementation TODOs, placeholders, and explanations that the copy comes from reviews/posts.
-- **Reject or rewrite:** Any sentence that sounds like an audit trail, compliance rule, generation instruction, dataset limitation, or note to a future editor. Rewrite it into restaurant-facing copy only if the underlying fact is useful to guests; otherwise remove it.
+Ask: would this information be useful and appropriate for a restaurant guest, and does its public phrasing stay within the evidence? If not, rewrite only if a useful supported fact remains; otherwise omit it. Never use the filter as a reason to hide legitimate attribution, remove a factual condition, or reverse a review's meaning.
 
-Use this internal question for every section, article, menu item description, review summary, gallery caption, CTA, and SEO string: "Would this be appropriate and useful for a final restaurant customer to read?" If the answer is not clearly yes, do not render it.
+Record `Customer Visibility Filter` in `findings.md` with customer-safe themes, internal-only notes, and rejected phrasing patterns. During validation search for phrases such as "review-visible facts", "not verified", "placeholder", "extracted", "scraped", "source field", "based on public review text", and implementation TODOs. Inspect matches in context: a legitimate credit or review source link is not leaked planning prose.
 
-Record the result in `.plan/<restaurant-slug>/findings.md` under `Customer Visibility Filter` with:
+## Verification Scenarios
 
-- customer-safe themes to use;
-- internal-only notes to keep out of rendered pages;
-- rejected phrases/patterns to search for during validation.
+Review the final pages with the source index open:
+
+- Every Advantage is concrete, appropriately differentiated, and supported by its displayed review.
+- Popular/other food selections are distinct and grounded; Beyond the menu contains supported experience details rather than hidden-menu inventions.
+- Different restaurant evidence changes visual hierarchy, module emphasis, and action priorities while preserving the five core pages.
+- Gallery and Reviews let guests browse the expanded selected material, including later batches and actual theme controls; mobile interactions remain usable.
+- Source-limited sections are omitted honestly, not padded. Required pages do not disappear; complete absence of real reviews/photos remains a documented blocker.
+- Titles, descriptions, JSON-LD, visible copy, and CMS content agree on factual details and do not expose the internal enrichment process.
