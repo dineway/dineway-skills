@@ -33,15 +33,23 @@ errors, decisions, gate evidence, and verification results under `.plan/{{CLONE_
 
 ## Source URLs and One-Hop Discovery
 
+<!-- prettier-ignore-start -->
+
 | Source URL | Scope | Explicit parent | Preserved state | Normalized pathname | Discovery decision |
 | ---------- | ----- | --------------- | --------------- | ------------------- | ------------------ |
 {{SOURCE_URL_PLAN_ROWS}}
 
+<!-- prettier-ignore-end -->
+
 ## Route and Artifact Plan
+
+<!-- prettier-ignore-start -->
 
 | Source URL | Scope | Explicit parent | Destination route | Route family | Dineway mapping | site-key | page-key | Research root | Screenshot root | Component namespace | Asset namespace | Collision resolution |
 | ---------- | ----- | --------------- | ----------------- | ------------ | --------------- | -------- | -------- | ------------- | --------------- | ------------------- | --------------- | -------------------- |
 {{ROUTE_AND_ARTIFACT_ROWS}}
+
+<!-- prettier-ignore-end -->
 
 Every row must identify whether it is explicit or discovered, the explicit parent when discovered,
 the normalized destination route, route family, collection/entry mapping, page key, research root,
@@ -51,27 +59,43 @@ screenshot root, component namespace, asset namespace, and any collision resolut
 
 {{SOURCE_DATA_LAYER_AUDIT}}
 
+<!-- prettier-ignore-start -->
+
 | Page URL | Surface | Location/endpoint | Transport method | Operation type | Access | Parameters/state | Pagination | Filter/sort | Response entity | UI consumer | Evidence |
 | -------- | ------- | ----------------- | ---------------- | -------------- | ------ | ---------------- | ---------- | ----------- | --------------- | ----------- | -------- |
 {{SOURCE_DATA_LAYER_ROWS}}
 
+<!-- prettier-ignore-end -->
+
 ### Source Page Content Closure
+
+<!-- prettier-ignore-start -->
 
 | Page URL | HTML document surface | Visible entity | Visible field refs | Visible record IDs | Stable selectors | Evidence |
 | -------- | --------------------- | -------------- | ------------------ | ------------------ | ---------------- | -------- |
 {{SOURCE_PAGE_CONTENT_ROWS}}
 
+<!-- prettier-ignore-end -->
+
 ### Source Field Inventory
+
+<!-- prettier-ignore-start -->
 
 | Source field ref | Source entity | Source path | Observed type | Nullable | Data class | Observed in-scope values | Identifier role | Enum/date semantics | Relationship/cardinality | Locale/status | Media shape | UI consumer | Evidence |
 | ---------------- | ------------- | ----------- | ------------- | -------- | ---------- | ------------------------ | --------------- | ------------------- | ------------------------ | ------------- | ----------- | ----------- | -------- |
 {{SOURCE_FIELD_INVENTORY_ROWS}}
 
+<!-- prettier-ignore-end -->
+
 ### Source Record Inventory
+
+<!-- prettier-ignore-start -->
 
 | Source entity | Source record ID | Ordered field tuple (compact JSON by sourceRef) | UI consumer | Evidence |
 | ------------- | ---------------- | ----------------------------------------------- | ----------- | -------- |
 {{SOURCE_RECORD_INVENTORY_ROWS}}
+
+<!-- prettier-ignore-end -->
 
 For every planned page, browser-extract a complete visible-content manifest before modeling APIs:
 all non-empty visible text nodes, image/source URLs and alt text, links, navigation items, and
@@ -119,19 +143,31 @@ redirect target before fetching to prevent rebinding.
 
 The completed agent must include concrete mapping tables with, at minimum:
 
+<!-- prettier-ignore-start -->
+
 | Source entity | Source location/API | Dineway owner | Collection/section/setting/menu | Route consumer | Evidence |
 | ------------- | ------------------- | ------------- | ------------------------------- | -------------- | -------- |
 {{SOURCE_ENTITY_MAPPING_ROWS}}
+
+<!-- prettier-ignore-end -->
+
+<!-- prettier-ignore-start -->
 
 | Source field ref/path | Owner kind | Owner key | Target path | Canonical Dineway CMS field name/label | Runtime storageSlug | Dineway type | Required/nullability | Validation/options | Relationship/cardinality | Locale/status | Media ownership/source | Seed/render consumer | Evidence |
 | --------------------- | ---------- | --------- | ----------- | -------------------------------------- | ------------------- | ------------ | -------------------- | ------------------ | ------------------------ | ------------- | ---------------------- | -------------------- | -------- |
 {{SOURCE_FIELD_MAPPING_ROWS}}
 
+<!-- prettier-ignore-end -->
+
 ### Source Record Binding Plan
+
+<!-- prettier-ignore-start -->
 
 | Source entity | Source record ID | Owner kind | Owner key | Seed JSON Pointer | Evidence |
 | ------------- | ---------------- | ---------- | --------- | ----------------- | -------- |
 {{SOURCE_RECORD_BINDING_ROWS}}
+
+<!-- prettier-ignore-end -->
 
 Every visible source-backed entity and field must appear exactly once as an owned setting, menu,
 section, taxonomy, collection field, system field, or deliberate presentation-only value. Preserve
@@ -301,8 +337,9 @@ For an explicitly approved adaptation, state which source relationships are bein
 and which target identity, content, routes, and behavior are retained. Give each changed region
 concrete acceptance criteria grounded in the source observations and the target's page task.
 Masks identify allowed differences; they do not prove that the adapted region is well designed.
-Keep quantitative comparison for source-locked regions and verify approved regions against their
-recorded geometry, hierarchy, content, and interaction requirements.
+Keep quantitative comparison for source-locked regions in the standard capture mode, or use the
+documented window-screenshot review when that fallback applies. Verify approved regions against
+their recorded geometry, hierarchy, content, and interaction requirements.
 
 ## Engineering Constraints and Verification
 
@@ -393,6 +430,10 @@ red or unproven.
 
 ### Evidence Gate
 
+Choose an evidence mode under **Screenshot Evidence Modes** below. The following capture checks
+apply to standard masters; the documented fallback can satisfy the visual evidence requirement
+with existing window screenshots. Other evidence and runtime requirements remain in force.
+
 - Every planned page has source screenshots at 1440px and 390px plus responsive evidence at 768px.
 - Browser metadata records `innerWidth`, `innerHeight`, `devicePixelRatio`, output pixel dimensions,
   scroll height, URL, and capture timestamp.
@@ -404,6 +445,45 @@ red or unproven.
   not image-complete evidence.
 - `PAGE_TOPOLOGY.md`, `BEHAVIORS.md`, source content, asset sweep, and computed-style evidence exist.
 - Section/component screenshots exist before their specifications are written.
+
+### Screenshot Evidence Modes
+
+**Standard (preferred):** use the image-complete tiled workflow above whenever it is available.
+Keep its original readiness, viewport, metadata and quantitative comparison checks.
+
+**Window screenshot fallback:** when browser automation is unavailable or unreliable, or the user
+asks to use existing window screenshots, use original user-supplied or native browser-window
+captures for visual acceptance. For design adaptations this can replace strict source masters and
+pixel comparisons. If exact pixel thresholds are an explicit user deliverable, retain them unless
+the user authorizes this substitution. Existing authorization is sufficient; do not ask again.
+
+Record a `WINDOW_SCREENSHOT_REVIEW.md` alongside the task's evidence, containing:
+
+- Why the fallback applies, its page/state scope and any user authorization. Preserve original
+  images and identify each source URL, state, file, capture time and pixel dimensions. Record CSS
+  viewport, zoom or DPR only when known; window pixels are not CSS dimensions.
+- Source/target pairs for the affected page families and relevant states. Review visible images,
+  content, navigation, hierarchy, density, spacing, crop, control placement and responsive behavior.
+  Explain how each approved adaptation serves the target's actual task and real content.
+- Coverage and limits: distinguish visible page regions from browser chrome and off-screen areas.
+  Reject blank, loading or obstructed frames for the region being assessed. Use overlapping window
+  views or existing verified observations to cover relevant content and states. Inspect original
+  files; crops or contact sheets are navigation aids, not additional evidence. Do not infer unseen
+  content or claim measured decode/stable-height metadata from appearance alone.
+- A concrete result per family, discrepancies and supporting target interaction evidence. Keep
+  checking the target at desktop/tablet/mobile widths even when the source viewport cannot change.
+  Prefer standard target captures where available. Missing source breakpoints must be disclosed;
+  target responsiveness is verified independently, not claimed identical to an unseen reference.
+
+Mark the affected pixel/DPR/stitch thresholds **not applicable — window screenshot fallback**;
+never fabricate a `.capture.json`, SSIM score or pixel-perfect claim. A reasoned, artifact-backed
+visual review can pass the Evidence and Visual QA gates in this mode. A screenshot count or generic
+"looks good" is insufficient. Remaining observed defects must still be fixed or explicitly accepted.
+This substitutes the visual capture/comparison method only: source-content/data mapping, CMS,
+authorization, actual interactions, runtime tests and build checks are unchanged. Unknown computed
+styles may be recorded as unknown and visually assessed in this mode, not invented as measurements.
+Do not keep retrying a broken capture tool solely to obtain standard masters after the fallback
+provides sufficient evidence for the authorized acceptance scope.
 
 ### Data Model Gate
 
@@ -466,6 +546,10 @@ red or unproven.
 
 ### Visual QA Gate
 
+Use the standard checks below for comparable masters. For window-screenshot scope, apply
+**Screenshot Evidence Modes** instead of the exact capture/geometry/pixel requirements; review
+all applicable page families and record the acceptance basis and limitations.
+
 - Source and target captures use `deviceScaleFactor: 1` and identical 1440px and 390px CSS
   viewports. Their output widths must be exactly 1440px and 390px respectively.
 - Capture both source and target masters with the same image-complete tiled workflow. Every compared
@@ -496,7 +580,8 @@ red or unproven.
 - Every explicit and discovered destination returns the expected SSR page or an approved redirect;
   validate the rendered identity so a branded 404 cannot pass as HTTP 200.
 - Component/spec/dispatch counts match and every gate is green with linked evidence.
-- Desktop/mobile visual thresholds and every observed interaction pass.
+- Desktop/mobile visual thresholds, or the applicable window-screenshot review, and every observed
+  interaction pass.
 - Remaining discrepancies are zero or individually disclosed and explicitly accepted by the user.
 - Every reversible runtime-content test restored the source-faithful value and no sentinel remains.
 
@@ -594,7 +679,7 @@ Record whether every planned page is explicit or discovered and, for discovered 
 
 ### 1. Completeness beats speed
 
-Every builder must receive the screenshot, exact computed CSS, local asset paths, source text, component structure, responsive behavior, interaction states, and Dineway content contract. If a builder has to guess anything — a color, a font size, a padding value, a Dineway field name — you have failed at extraction. Take the extra minute to extract one more property rather than shipping an incomplete brief.
+Every builder must receive the screenshot, available computed CSS, local asset paths, source text, component structure, responsive behavior, interaction states, and Dineway content contract. In standard mode, extract exact styles before building rather than guessing. In window-screenshot mode, distinguish observed relationships and known target tokens from unavailable source measurements; include the documented visual acceptance criteria. CMS field names and behavior still require verified contracts.
 
 ### 2. Small tasks produce exact results
 
@@ -681,6 +766,9 @@ Every builder runs `pnpm typecheck` for its worktree or assigned surface. After 
 Navigate to every explicit and discovered target with browser automation. Research discovered pages, but never extract new crawl targets from them.
 
 ### Screenshots
+
+Use **Screenshot Evidence Modes** to choose standard capture or the window-screenshot fallback.
+The commands and readiness checks below describe standard capture.
 
 - Capture full-page screenshots at desktop (1440px), tablet (768px), and mobile (390px) with the
   bundled deterministic workflow. Run these commands separately for every planned source URL,
@@ -939,6 +1027,10 @@ without fabricating the source site's identity.
 For each section, repeat the original core loop: **extract → spec → dispatch → merge**.
 
 ### Step 1: Extract
+
+Apply the selected evidence mode: exact computed-style extraction below is the standard method;
+window-screenshot mode records unavailable measurements and uses the documented visual review.
+Content and Dineway contracts still need their own evidence.
 
 1. Capture a section screenshot in its namespaced screenshot directory.
 2. Run one computed-style extraction over the component container rather than estimating CSS.
@@ -1207,7 +1299,9 @@ Do not declare completion after assembly.
 2. Verify every explicit and discovered destination route returns the expected SSR page.
 3. Capture original and clone screenshots at identical 1440px and 390px viewports with
    `capture-source-screenshots.mjs`. Use distinct source/clone filenames, preserve each capture's
-   `.capture.json` and `.tiles/`, and require both readiness manifests to pass before diffing.
+   `.capture.json` and `.tiles/`, and require both readiness manifests to pass before diffing. When
+   using the window-screenshot fallback, complete `WINDOW_SCREENSHOT_REVIEW.md` instead for the
+   affected scope; use the available original frames and keep target responsive/interaction QA.
 4. Compare section-by-section. When a mismatch exists, re-check the specification; re-extract a wrong spec or repair an implementation that diverged from a correct spec.
 5. Re-test every scroll, click, hover, focus, responsive, and timed behavior.
 6. Verify source-derived settings and menus render from Dineway.
@@ -1248,7 +1342,8 @@ Trace a mismatch back to its specification and styling owner, then retest the af
 approved adaptations, check the changed regions against the acceptance criteria in the change
 budget without claiming pixel equality for different content or layouts. Retain screenshots after
 relevant images and fonts finish loading, together with actual interaction evidence. Distinguish
-product defects from capture timing and fixture limitations in that evidence.
+product defects from capture timing and fixture limitations in that evidence. In window-screenshot
+mode, record visible readiness and any unknown font/image metadata instead of asserting decode.
 
 Only finish when the clone is visually faithful and the Dineway content/runtime contract works.
 
@@ -1284,9 +1379,10 @@ These are lessons from previous failed clones — each one cost hours of rework:
 - **Do not replace an existing route, schema, seed entry, or asset namespace without approval.** Preserve existing routes and namespaced artifacts; ask before updating a route that already exists.
 - **Do not reference specs or docs from builder prompts.** Each builder gets the specification inline in its prompt — never "see the spec file" or "see DESIGN_TOKENS.md for colors." The builder should have zero need to read external docs.
 - **Do not skip asset extraction.** Without real images, videos, and fonts, the clone will always look fake regardless of how perfect the CSS is.
-- **Do not trust a source screenshot captured before lazy images decode.** Scroll the complete page,
-  require stable height and zero failed image assets, then stitch actual viewport tiles. A fixed wait
-  or `networkidle` result can still contain placeholders or blank late sections.
+- **Do not accept loading or incomplete regions as visual proof.** Standard masters require decoded
+  images, stable height and stitched tiles; a fixed wait or `networkidle` can still leave blanks.
+  In window-screenshot mode, assess visible readiness and record coverage limits without asserting
+  measurements the browser tool could not provide.
 - **Do not clone only the DOM while ignoring the public source data layer.** Audit document/hydration
   payloads, JSON-LD, XHR/fetch, REST, and GraphQL reads before freezing the CMS model.
 - **Do not flatten source entities into arbitrary frontend JSON.** Preserve observed types,
@@ -1334,7 +1430,8 @@ Report:
 The clone is done only when every row in `.plan/{{CLONE_SLUG}}/gate-status.md` is green and links to
 current evidence; every explicit and discovered route is implemented or has an approved redirect;
 component/spec/dispatch counts match; the public data-layer audit and field mapping are complete;
-Dineway seed, types, SSR content, admin, and discovery endpoints pass; desktop and mobile comparisons meet the quantitative thresholds outside approved
-change-budget masks; all observed interactions pass; the working tree and commits are reviewed;
+Dineway seed, types, SSR content, admin, and discovery endpoints pass; desktop and mobile comparisons
+meet the quantitative thresholds outside approved change-budget masks, or the applicable
+window-screenshot review passes with its scope and limitations recorded; all observed interactions pass; the working tree and commits are reviewed;
 and every remaining discrepancy is disclosed and explicitly accepted. A functioning server or
 successful build alone is never completion.

@@ -37,6 +37,7 @@ def stitch(metadata_path: Path, output_path: Path) -> None:
 		raise SystemExit("The final tile has an invalid document height")
 
 	canvas = Image.new("RGB", (first.width, round(document_height * scale)), "white")
+	covered_until = 0
 	for tile_meta in tiles:
 		tile_path = resolve_tile(metadata_path, tile_meta["file"])
 		with Image.open(tile_path) as image:
@@ -58,7 +59,15 @@ def stitch(metadata_path: Path, output_path: Path) -> None:
 			continue
 		if tile.height > remaining:
 			tile = tile.crop((0, 0, tile.width, remaining))
-		canvas.paste(tile, (0, top))
+		# Preserve pixels already captured: the final viewport commonly overlaps
+		# its predecessor, including the first tile's fixed header.
+		overlap = max(0, covered_until - top)
+		if overlap >= tile.height:
+			continue
+		if overlap:
+			tile = tile.crop((0, overlap, tile.width, tile.height))
+		canvas.paste(tile, (0, top + overlap))
+		covered_until = top + overlap + tile.height
 
 	output_path.parent.mkdir(parents=True, exist_ok=True)
 	canvas.save(output_path, optimize=True)

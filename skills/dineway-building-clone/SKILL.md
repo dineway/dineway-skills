@@ -166,7 +166,8 @@ affected scope.
 
 Carry these decisions into the generated agent's change budget, engineering constraints, component
 specifications, and the concrete visual-review questions in Phase 5 of the template. Keep existing
-quantitative gates for source-locked regions; masking an approved difference does not verify its
+quantitative gates for source-locked regions in standard capture mode, or use the documented
+window-screenshot fallback when applicable; masking an approved difference does not verify its
 new design. Retain fully loaded screenshots and actual interaction evidence, distinguishing product
 defects from capture timing and fixture limitations. Earlier completion reports are historical
 evidence, not a new QA pass. These principles do not waive discovery, data mapping, source evidence,
@@ -200,7 +201,13 @@ This pass establishes executable scope. Full screenshots, interaction sweeps, co
 content extraction, and asset downloads remain part of goal execution. During execution, capture
 every source master screenshot with `scripts/capture-source-screenshots.mjs`; it must scroll through
 the rendered page, wait for image decode and stable document height, capture viewport tiles, and
-invoke `scripts/stitch-browser-screenshots.py` before the screenshot becomes evidence.
+invoke `scripts/stitch-browser-screenshots.py` before it qualifies as a standard master. If this
+workflow is unavailable or unreliable, or the user requests existing window screenshots, apply
+[Screenshot Evidence Modes](references/clone-agent-template.md#screenshot-evidence-modes).
+Original window screenshots may support final visual acceptance through a documented source/target
+review; keep the normal workflow as the default and do not invent pixel scores or readiness metadata.
+This fallback changes visual evidence only, not CMS, content, permissions or runtime verification.
+A user-approved fallback is sufficient authorization to continue; do not request it again.
 
 ## Step 4: Resolve the Agent Path
 
@@ -254,7 +261,8 @@ Requirements:
 - Require source and comparison master screenshots to use `capture-source-screenshots.mjs` at exact
   viewports. Reject a capture unless its adjacent `.capture.json` reports decoded rendered images,
   zero `failedImages`, stable final document height, DPR 1 tile dimensions, and a stitched output
-  matching that final height.
+  matching that final height. Also retain the template's window-screenshot fallback, including
+  its scope, evidence review and limits; its approved captures are not standard masters.
 - Run the artifact closure gate in `--phase foundation` before component dispatch, then require a
   caller-trusted local clone URL and occurrence-level `RUNTIME_CONTENT_PROOF.json` in
   `--phase completion` after the reversible sentinel checks.
@@ -295,7 +303,8 @@ The validator must prove:
 - Record-level source tuples, exact seed bindings, reference/media validity, and agent/artifact
   alignment remain mandatory
 - Every hard gate and visual threshold remains present
-- Image-complete tiled source capture and its stitch/readiness metadata remain mandatory
+- Standard image-complete tiled capture checks and the documented window-screenshot alternative
+  remain present; a fallback review never masquerades as a passing standard capture
 - At least one explicit HTTP(S) URL and a concrete route/artifact plan are present
 
 If validation fails, modify only the agent file and run the validator again. Never create a goal

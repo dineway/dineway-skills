@@ -429,54 +429,144 @@ function validateTileCoverage(tiles, documentHeight) {
 	}
 }
 
+// A full-document composite must not multiply viewport-attached controls. Keep
+// sticky content in its normal flow, top/central fixed controls in the first tile,
+// and bottom fixed controls in the last. The live page is restored in finally.
+async function preparePositionedElements(page) {
+	const handle = await page.evaluateHandle(() => {
+		const records = [];
+		for (const element of document.querySelectorAll("*")) {
+			if (!(element instanceof HTMLElement)) continue;
+			const style = getComputedStyle(element);
+			const rect = element.getBoundingClientRect();
+			if (
+				!["sticky", "fixed"].includes(style.position) ||
+				style.display === "none" ||
+				style.visibility === "hidden" ||
+				rect.width <= 0 ||
+				rect.height <= 0
+			)
+				continue;
+			const properties =
+				style.position === "sticky"
+					? ["position", "top", "right", "bottom", "left"]
+					: ["visibility"];
+			records.push({
+				element,
+				position: style.position,
+				last: style.position === "fixed" && rect.top >= innerHeight / 2,
+				properties: properties.map((name) => ({
+					name,
+					value: element.style.getPropertyValue(name),
+					priority: element.style.getPropertyPriority(name),
+				})),
+			});
+		}
+		for (const record of records)
+			if (record.position === "sticky") {
+				record.element.style.setProperty("position", "relative", "important");
+				for (const side of ["top", "right", "bottom", "left"])
+					record.element.style.setProperty(side, "auto", "important");
+			}
+		return records;
+	});
+	const summary = await handle.evaluate((records) => ({
+		policy: "sticky-normal-flow; fixed-top-first-tile; fixed-bottom-last-tile",
+		stickyElements: records.filter((record) => record.position === "sticky").length,
+		fixedElements: records.filter((record) => record.position === "fixed").length,
+	}));
+	return {
+		summary,
+		async beforeTile(first, last) {
+			await handle.evaluate(
+				(records, state) => {
+					for (const record of records)
+						if (record.position === "fixed") {
+							const show = record.last ? state.last : state.first;
+							const original = record.properties[0];
+							if (!show) record.element.style.setProperty("visibility", "hidden", "important");
+							else if (original.value)
+								record.element.style.setProperty("visibility", original.value, original.priority);
+							else record.element.style.removeProperty("visibility");
+						}
+				},
+				{ first, last },
+			);
+		},
+		async restore() {
+			try {
+				await handle.evaluate((records) => {
+					for (const record of records)
+						for (const property of record.properties) {
+							if (property.value)
+								record.element.style.setProperty(property.name, property.value, property.priority);
+							else record.element.style.removeProperty(property.name);
+						}
+				});
+			} finally {
+				await handle.dispose();
+			}
+		},
+	};
+}
+
 async function captureTiles(page, options, tileDirectory) {
 	for (let attempt = 1; attempt <= MAX_CAPTURE_PASSES; attempt += 1) {
 		const prepared = await scrollThroughPage(page, options.settleMs, options.timeoutMs);
 		const expectedHeight = prepared.state.scrollHeight;
-		rmSync(tileDirectory, { recursive: true, force: true });
-		mkdirSync(tileDirectory, { recursive: true });
+		const positioned = await preparePositionedElements(page);
+		try {
+			rmSync(tileDirectory, { recursive: true, force: true });
+			mkdirSync(tileDirectory, { recursive: true });
 
-		const tiles = [];
-		const seenPositions = new Set();
-		let requestedY = 0;
-		for (let index = 0; ; index += 1) {
-			await scrollToCssPosition(page, requestedY, options.timeoutMs);
-			await page.waitForTimeout(options.settleMs);
-			const viewportReady = await waitForViewportImages(page, Math.min(options.timeoutMs, 15_000));
-			if (!viewportReady) {
-				await throwForIncompleteImages(page, Math.min(options.timeoutMs, 15_000));
-			}
-			await throwForIncompleteImages(page, Math.min(options.timeoutMs, 15_000));
-
-			const position = await scrollToCssPosition(page, requestedY, options.timeoutMs);
-			if (seenPositions.has(position)) break;
-			seenPositions.add(position);
-
-			const state = await documentState(page);
-			if (state.scrollHeight !== expectedHeight) break;
-			const tilePath = join(tileDirectory, `tile-${String(index).padStart(3, "0")}.png`);
-			await page.screenshot({ path: tilePath, type: "png", fullPage: false, caret: "hide" });
-			const pixels = pngDimensions(tilePath);
-			tiles.push({
-				file: tilePath,
-				y: position,
-				width: state.innerWidth,
-				height: state.innerHeight,
-				docHeight: state.scrollHeight,
-				pixelWidth: pixels.width,
-				pixelHeight: pixels.height,
-				capturedAt: new Date().toISOString(),
-			});
-
-			if (position + state.innerHeight >= expectedHeight) {
-				const finalState = await documentState(page);
-				if (finalState.scrollHeight === expectedHeight) {
-					validateTileCoverage(tiles, expectedHeight);
-					return { prepared, tiles };
+			const tiles = [];
+			const seenPositions = new Set();
+			let requestedY = 0;
+			for (let index = 0; ; index += 1) {
+				await scrollToCssPosition(page, requestedY, options.timeoutMs);
+				await page.waitForTimeout(options.settleMs);
+				const viewportReady = await waitForViewportImages(
+					page,
+					Math.min(options.timeoutMs, 15_000),
+				);
+				if (!viewportReady) {
+					await throwForIncompleteImages(page, Math.min(options.timeoutMs, 15_000));
 				}
-				break;
+				await throwForIncompleteImages(page, Math.min(options.timeoutMs, 15_000));
+
+				const position = await scrollToCssPosition(page, requestedY, options.timeoutMs);
+				if (seenPositions.has(position)) break;
+				seenPositions.add(position);
+
+				const state = await documentState(page);
+				if (state.scrollHeight !== expectedHeight) break;
+				await positioned.beforeTile(index === 0, position + state.innerHeight >= expectedHeight);
+				const tilePath = join(tileDirectory, `tile-${String(index).padStart(3, "0")}.png`);
+				await page.screenshot({ path: tilePath, type: "png", fullPage: false, caret: "hide" });
+				const pixels = pngDimensions(tilePath);
+				tiles.push({
+					file: tilePath,
+					y: position,
+					width: state.innerWidth,
+					height: state.innerHeight,
+					docHeight: state.scrollHeight,
+					pixelWidth: pixels.width,
+					pixelHeight: pixels.height,
+					capturedAt: new Date().toISOString(),
+				});
+
+				if (position + state.innerHeight >= expectedHeight) {
+					const finalState = await documentState(page);
+					if (finalState.scrollHeight === expectedHeight) {
+						validateTileCoverage(tiles, expectedHeight);
+						return { prepared, tiles, compositing: positioned.summary };
+					}
+					break;
+				}
+				requestedY = Math.min(position + state.innerHeight, expectedHeight - state.innerHeight);
 			}
-			requestedY = Math.min(position + state.innerHeight, expectedHeight - state.innerHeight);
+		} finally {
+			await positioned.restore();
 		}
 	}
 
@@ -547,6 +637,7 @@ export async function capturePreparedPage(page, input) {
 			deviceScaleFactor: 1,
 		},
 		document: finalState,
+		compositing: result.compositing,
 		readiness: {
 			fontsReady,
 			documentHeightStable: result.prepared.stable,

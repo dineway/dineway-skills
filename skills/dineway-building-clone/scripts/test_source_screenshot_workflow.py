@@ -41,7 +41,14 @@ class ScreenshotFixtureHandler(BaseHTTPRequestHandler):
 			self.send_error(404)
 			return
 
-		if path == "/broken":
+		if path == "/positioned":
+			body = b"""<!doctype html><style>
+html,body { margin:0; } body { height: 570px; padding-top:50px; box-sizing:border-box; }
+#sticky { position:sticky;top:0;height:20px;background:rgb(0,0,255); }
+#top { position:fixed;top:0;width:100%;height:20px;background:rgb(255,0,0); }
+#bottom { position:fixed;bottom:0;width:100%;height:20px;background:rgb(0,255,0); }
+</style><div id="sticky"></div><div id="top"></div><div id="bottom"></div>"""
+		elif path == "/broken":
 			body = b"<!doctype html><img src='/missing.png' width='40' height='40'>"
 		else:
 			body = b"""<!doctype html>
@@ -161,6 +168,19 @@ try {
   await page.setViewportSize({ width: 390, height: 240 });
   await assert.rejects(capturePreparedPage(page, options), /exact viewport/);
   await capturePreparedPage(page, { ...options, width: 390, height: 240, output: process.env.OUTPUT.replace('.png', '-mobile.png') });
+  const positionedUrl = process.env.FIXTURE_URL + 'positioned';
+  await page.goto(positionedUrl); await page.setViewportSize({ width: 320, height: 180 });
+  const styles = () => page.evaluate(() => ['sticky','top','bottom'].map(id => {
+    const node = document.getElementById(id), style = getComputedStyle(node);
+    return { position:style.position, top:style.top, bottom:style.bottom, visibility:style.visibility, inline:node.style.cssText };
+  }));
+  const before = await styles();
+  const positionedOptions = { ...options, url:positionedUrl, expectedUrl:positionedUrl, output:process.env.OUTPUT.replace('.png','-positioned.png') };
+  await capturePreparedPage(page, positionedOptions); assert.deepEqual(await styles(),before);
+  const screenshot = page.screenshot.bind(page);
+  page.screenshot = async () => { throw new Error('fixture screenshot failure'); };
+  await assert.rejects(capturePreparedPage(page, positionedOptions), /fixture screenshot failure/);
+  assert.deepEqual(await styles(), before); page.screenshot = screenshot;
   const retina = await browser.newContext({ viewport: { width: 320, height: 180 }, deviceScaleFactor: 2 });
   const retinaPage = await retina.newPage(); await retinaPage.goto(process.env.FIXTURE_URL);
   await assert.rejects(capturePreparedPage(retinaPage, options), /devicePixelRatio 1/);
@@ -179,6 +199,19 @@ try {
 				self.assertEqual(metadata["readiness"]["failedImages"], [])
 				with Image.open(path) as image:
 					self.assertEqual(image.size, (width, metadata["document"]["scrollHeight"]))
+
+	def test_positioned_elements_are_not_duplicated_across_stitched_tiles(self) -> None:
+		with tempfile.TemporaryDirectory() as directory:
+			output = Path(directory) / "positioned.png"
+			result = self.run_capture(f"{self.base_url}/positioned", output)
+			self.assertEqual(result.returncode, 0, result.stderr)
+			with Image.open(output) as screenshot:
+				column = [screenshot.convert("RGB").getpixel((100,y)) for y in range(screenshot.height)]
+				self.assertEqual(column.count((255,0,0)),20, "fixed header duplicated")
+				self.assertEqual(column.count((0,0,255)),20, "sticky content duplicated")
+				self.assertEqual(column.count((0,255,0)),20, "fixed footer duplicated")
+				self.assertTrue(all(c == (0,255,0) for c in column[-20:]), "footer belongs at the final viewport")
+
 
 	def test_fails_closed_when_a_rendered_image_is_broken(self) -> None:
 		with tempfile.TemporaryDirectory() as directory:
